@@ -1,0 +1,330 @@
+---
+title: "Trabajo 1"
+author: "Luis Suárez Lloréns"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Apartado 1: Generación y visualización de datos.
+
+En este apartado, veremos las formas básicas de generar datos de manera aleatoria y representarlos en gráficas. Esto será de gran utilidad en los siguientes apartados y prácticas.
+
+#### Ejercicio 1.
+
+Tenemos que generar una lista con vectores aleatorios, con valores obtenidos de una distribución uniforme.
+
+La función de R *runif* nos simula datos de una distribución uniforme. Entonces esta función genera los distintos vectores, y los va guardando en una lista, que después se devuelve como salida de la función.
+
+```{r Ejercicio 1}
+simula_unif <- function(N,dim,rango){
+  min = rango[1]
+  max = rango[2]
+
+  i= 0
+  L <- list() #Inicializamos la lista
+  
+  #Para cada elemento a crear de la lista,
+  #   Generamos los valores
+  #   Transformamos a lista
+  #   Almacenamos
+  while(i < N){
+    L[length(L)+1] <- list(runif(dim,min,max))
+    i <- i +1
+  }
+  #x <- runif(N*dim,min,max)
+  #m <- matrix(x, ncol= dim, nrow= N) o algo así
+  L
+}
+
+x = simula_unif(3,4,c(-5,5))
+print(x)
+
+```
+
+#### Ejercicio 2.
+
+Tenemos que generar una lista con vectores aleatorios, con valores obtenidos de una distribución normal.
+
+Hacemos lo mismo que en el ejercicio anterior, pero usando la función de R que genera valores de una normal, *rnorm*. Destacar que para obtener la desviación estandar, que es la información pedida por la función *rnorm*, realizamos la operación *sqrt* sobre todas las varianzas sencillamente con sqrt(sigma). R automáticamente realiza la operación sobre todos los elementos, sin necesidad de bucles.
+
+```{r Ejercicio 2}
+simula_gaus <- function(N,dim,sigma){
+  i= 0
+  L <- list() #Inicializamos la lista
+  
+  #Para cada elemento a crear de la lista,
+  #   Generamos los valores
+  #   Transformamos a lista
+  #   Almacenamos
+  while(i < N){
+    L[length(L)+1] <- list(rnorm(dim,sd=sqrt(sigma)))
+    i <- i +1
+  }
+
+  L
+}
+
+x = simula_gaus(3,4,c(5,7))
+print(x)
+
+```
+
+#### Ejercicio 3.
+
+Mostrar los datos generados por una uniforme.
+
+Para generar los datos, usaremos la función generada en el ejercicio 1. Usaremos $N=50$, $dim=50$ y $rango=[-50,50]$. Para poder darle los datos a la función *plot*, necesitamos que los puntos esten en dos vectores. Recorremos los resultados obtenidos tras simular los datos, y los guardamos en dos vectores distintos, que sirven de entrada para la función *plot*.
+
+```{r Ejercicio 3}
+x <- simula_unif(50,2,c(-50,50))
+
+x_plot <- x[[1]][1]
+y_plot <- x[[1]][2]
+
+for (i in 2:length(x)){
+  x_plot <- c(x_plot,x[[i]][1])
+  y_plot <- c(y_plot,x[[i]][2])
+}
+
+plot(x_plot,y_plot)
+```
+
+#### Ejercicio 4.
+
+Mostrar los datos generados por una Gaussiana.
+
+Realizaremos lo mismo que en el ejercicio anterior, pero generando los datos con la función del ejercicio 2. Los parámetros son $N=50$, $dim=50$ y $sigma =[5,7]$.
+
+```{r Ejercicio 4}
+x <- simula_gaus(50,2,c(5,7))
+
+x_plot <- x[[1]][1]
+y_plot <- x[[1]][2]
+
+for (i in 2:length(x)){
+  x_plot <- c(x_plot,x[[i]][1])
+  y_plot <- c(y_plot,x[[i]][2])
+}
+
+plot(x_plot,y_plot)
+```
+
+#### Ejercicio 5.
+
+Generar una recta que pase por dos puntos aleatorios.
+
+Obtener los valores de $a$ y $b$ es muy sencillo:
+
+$$ a = \frac{y_{1}-y_{2}}{x_{1}-x_{2}} $$
+$$ b = y_{1} - a x_{1}$$
+
+Hay que tener cuidado con el caso $x_{1}-x_{2} = 0$, es decir, que la linea sea vertical. Ese caso guardaremos $a = INF$ y $b = x_{1}$.
+
+```{r Ejercicio 5}
+simula_recta <- function(){
+  puntos <- simula_unif(2,2,c(-50,50))
+  a <- 0
+  b <- 0
+  
+  if((puntos[[1]][1]-puntos[[2]][1]) != 0){
+    a <- (puntos[[1]][2]-puntos[[2]][2])/(puntos[[1]][1]-puntos[[2]][1])
+    b <- puntos[[1]][2] - a*puntos[[1]][1]
+  }
+  else{
+    a <- Inf
+    b <- puntos[[1]][1]
+  }
+  
+  c(a,b)
+}
+
+simula_recta()
+
+```
+
+#### Ejercicio 6.
+
+Etiquetar puntos aleatorios según una recta.
+
+Tenemos que generar una recta y los puntos. Tras esto, generamos un vector con las etiquetas, según el signo de $f(x,y) = y-ax-b$.
+
+Una vez tenemos todos los datos, mostramos los datos con tipos de puntos distintos.
+
+```{r Ejercicio 6}
+recta <- simula_recta()
+x <- simula_unif(50,2,c(-50,50))
+x_plot <- x[[1]][1]
+y_plot <- x[[1]][2]
+
+for (i in 2:length(x)){
+  x_plot <- c(x_plot,x[[i]][1])
+  y_plot <- c(y_plot,x[[i]][2])
+}
+
+f <- function(x,y){
+  y-recta[1]*x-recta[2]
+}
+
+clasifica <- function(f,x,y){
+  sign(f(x,y))
+}
+
+clas <- clasifica(f,x_plot,y_plot)
+
+plot(x_plot[clas > 0], y_plot[clas > 0], pch = 1, col = 2,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
+abline(a = recta[2], b = recta[1])
+points(x_plot[clas < 0], y_plot[clas < 0], pch = 5, col = 4)
+```
+
+#### Ejercicio 7.
+
+Etiquetar puntos aleatorios según una función.
+
+Vamos a seguir los mismos pasos que el ejercicio anterior. La diferencia que encontramos es que las funciones no son rectas y por tanto, no nos vale la misma forma de dibujar la función. Para poder dibujarlas, usaremos la función de R *contour()*.
+
+```{r Ejercicio7}
+f1 <- function(x,y){
+  (x-10)**2+(y-20)**2 - 400
+}
+f2 <- function(x,y){
+  0.5*(x-10)**2+(y-20)**2 - 400
+}
+f3 <- function(x,y){
+  0.5*(x-10)**2-(y+20)**2 - 400
+}
+f4 <- function(x,y){
+  y - 20*x**2 - 5*x + 3
+}
+draw.clasificacion <- function(f,x,y){
+  clas <- clasifica(f,x,y)
+  x_graph = seq(-50,50,length.out = 500)
+  y_graph = seq(-50,50,length.out = 500)
+  z = outer(x_graph, y_graph,f)
+  contour(x_graph,y_graph,z, levels = 0, drawlabels = FALSE,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
+  points(x[clas > 0], y[clas > 0], pch = 1, col = 2)
+  points(x[clas < 0], y[clas < 0], pch = 5, col = 4)
+}
+```
+
+Una vez tenemos hemos creado la función para dibujar la clasificación, solo tenemos que ejecutarlas pasando las distintas funciones. Por ejemplo, para la función 1 sería:
+```{r Ejercicio7.1, eval=FALSE}
+draw.clasificacion(f1,x_plot,y_plot)
+```
+
+Y aquí están las gráficas.
+
+```{r Ejercicio7.2, echo = FALSE}
+draw.clasificacion(f1,x_plot,y_plot)
+draw.clasificacion(f2,x_plot,y_plot)
+draw.clasificacion(f3,x_plot,y_plot)
+draw.clasificacion(f4,x_plot,y_plot)
+```
+
+#### Ejercicio 8.
+
+Modificar un 10% de etiquetas.
+
+Para cambiar las etiquetas, primero, separamos los puntos en dos grupos, según su clasificación y los volvemos a concatenar. Así, obtendremos los puntos ordenados con respecto a la clasificación.
+
+Después, generamos dos vectores, que representán la clasificación de cada grupo. En vez de generar uno completamente verdadero y otro falso, añadimos el 10% de valores mal clasificado, como dice el ejercicio. Tras esto, solo hace falta reordenarlo con la orden *sample()* y juntarlos.
+
+Tras modificar las etiquetas, solo tenemos que repetir la respresentación del ejercicio 6.
+
+```{r Ejercicio 8}
+clas <- clasifica(f,x_plot,y_plot)
+
+x = c(x_plot[clas < 0],x_plot[clas > 0])
+y = c(y_plot[clas < 0], y_plot[clas > 0])
+
+#Negativos
+long = length(clas[clas<0])
+valores_camb = trunc(long/10)
+clas_neg = rep(c(TRUE,FALSE),times=c(valores_camb,long-valores_camb))
+clas_neg = sample(clas_neg,size = long)
+#Positivos
+long = length(clas[clas>0])
+valores_camb = trunc(long/10)
+clas_pos = rep(c(TRUE,FALSE),times=c(long-valores_camb,valores_camb))
+clas_pos = sample(clas_pos,size = long)
+
+clas = c(clas_neg,clas_pos)
+
+plot(x[clas == TRUE], y[clas == TRUE], pch = 1, col = 2,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
+abline(a = recta[2], b = recta[1])
+points(x[clas == FALSE], y[clas == FALSE], pch = 5, col = 4)
+```
+
+### Apartado 2: Ajuste del Algoritmo Perceptron
+
+```{r ajusta_PLA}
+# Calcula el hiperplano para clasificar
+# datos: datos que se usan para clasificar
+# label: etiqueta de los datos
+# max_iter: número máximo de iteraciones
+# vini: vector inicial
+#
+# return: coeficientes del hiperplano
+ajusta_PLA <- function(datos, label, max_iter, vini){
+  cambio = TRUE
+  coef = vini
+  iteracion = 0
+  num_datos = length(label)+1
+  
+  while(cambio && iteracion < max_iter){
+    i=1
+    cambio = FALSE
+    
+    while(i<num_datos){
+      
+      if(sign(t(c(datos[i,],1)) %*% coef) != label[i]){
+        coef <- coef + label[i]*c(datos[i,],1)
+        cambio = TRUE 
+      }
+      i <- i+1
+    }
+    
+    iteracion <- iteracion + 1
+    print("Se ha completado la iteración ")
+    print(iteracion)
+  }
+  
+  return(coef)
+}
+```
+
+```{r muestraResultado}
+data <- matrix(runif(100,-50,50),ncol = 2)
+recta <- simula_recta()
+
+f <- function(x,y){
+  y-recta[1]*x-recta[2]
+}
+
+label <- sign(f(data[,1],data[,2]))
+
+coef <- ajusta_PLA(data,label,1000,runif(3,-50-50))
+
+h <- function(x,y){
+    x*coef[1]+ y*coef[2] + coef[3]
+}
+
+draw.clasificacion <- function(f,x,y,label){
+  x_graph = seq(-50,50,length.out = 500)
+  y_graph = seq(-50,50,length.out = 500)
+  z = outer(x_graph, y_graph,f)
+  contour(x_graph,y_graph,z, levels = 0, drawlabels = FALSE,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
+  points(x[label > 0], y[label > 0], pch = 1, col = 2)
+  points(x[label < 0], y[label < 0], pch = 5, col = 4)
+}
+
+draw.clasificacion(h,data[,1],data[,2],label)
+```
+
+### Apartado 3: Regresión Lineal
+
+Tools->import->datos (marcar checkbox no tratar como factor(asFactor NO)) (es read.csv())
+La primera es la etiqueta, los demás, niveles de grises
+Visualización con *image(datos)* 
