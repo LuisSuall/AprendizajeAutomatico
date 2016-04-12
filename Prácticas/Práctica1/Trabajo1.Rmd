@@ -1,42 +1,33 @@
 ---
 title: "Trabajo 1"
 author: "Luis Suárez Lloréns"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Apartado 1: Generación y visualización de datos.
+```{r conf.seed, echo=FALSE}
+set.seed(87539319)
+```
+
+
+## Apartado 1: Generación y visualización de datos.
 
 En este apartado, veremos las formas básicas de generar datos de manera aleatoria y representarlos en gráficas. Esto será de gran utilidad en los siguientes apartados y prácticas.
 
 #### Ejercicio 1.
 
-Tenemos que generar una lista con vectores aleatorios, con valores obtenidos de una distribución uniforme.
+Generar una matriz con *N* filas, *dim* columnas y con valores obtenidos de una distribución uniforme.
 
-La función de R *runif* nos simula datos de una distribución uniforme. Entonces esta función genera los distintos vectores, y los va guardando en una lista, que después se devuelve como salida de la función.
+La función de R *runif* nos simula datos de una distribución uniforme. Los datos que obtenemos de la función *runif* están en un único vector. Para transformarlos a una matriz, usamos la función *matrix*, indicándole el número de columnas que queremos con el parámetro *ncol*.
+
+La función queda así:
 
 ```{r Ejercicio 1}
 simula_unif <- function(N,dim,rango){
-  min = rango[1]
-  max = rango[2]
-
-  i= 0
-  L <- list() #Inicializamos la lista
-  
-  #Para cada elemento a crear de la lista,
-  #   Generamos los valores
-  #   Transformamos a lista
-  #   Almacenamos
-  while(i < N){
-    L[length(L)+1] <- list(runif(dim,min,max))
-    i <- i +1
-  }
-  #x <- runif(N*dim,min,max)
-  #m <- matrix(x, ncol= dim, nrow= N) o algo así
-  L
+  matrix(runif(N*dim,rango[1],rango[2]),ncol = dim)
 }
 
 x = simula_unif(3,4,c(-5,5))
@@ -46,28 +37,16 @@ print(x)
 
 #### Ejercicio 2.
 
-Tenemos que generar una lista con vectores aleatorios, con valores obtenidos de una distribución normal.
+Generar una matriz con *N* filas, *dim* columnas y con valores obtenidos de una distribución normal.
 
 Hacemos lo mismo que en el ejercicio anterior, pero usando la función de R que genera valores de una normal, *rnorm*. Destacar que para obtener la desviación estandar, que es la información pedida por la función *rnorm*, realizamos la operación *sqrt* sobre todas las varianzas sencillamente con sqrt(sigma). R automáticamente realiza la operación sobre todos los elementos, sin necesidad de bucles.
 
 ```{r Ejercicio 2}
 simula_gaus <- function(N,dim,sigma){
-  i= 0
-  L <- list() #Inicializamos la lista
-  
-  #Para cada elemento a crear de la lista,
-  #   Generamos los valores
-  #   Transformamos a lista
-  #   Almacenamos
-  while(i < N){
-    L[length(L)+1] <- list(rnorm(dim,sd=sqrt(sigma)))
-    i <- i +1
-  }
-
-  L
+  matrix(rnorm(N*dim,sd=sqrt(sigma)),ncol = dim,byrow = TRUE)
 }
 
-x = simula_gaus(3,4,c(5,7))
+x = simula_gaus(3,4,c(5,7,1,1))
 print(x)
 
 ```
@@ -76,20 +55,12 @@ print(x)
 
 Mostrar los datos generados por una uniforme.
 
-Para generar los datos, usaremos la función generada en el ejercicio 1. Usaremos $N=50$, $dim=50$ y $rango=[-50,50]$. Para poder darle los datos a la función *plot*, necesitamos que los puntos esten en dos vectores. Recorremos los resultados obtenidos tras simular los datos, y los guardamos en dos vectores distintos, que sirven de entrada para la función *plot*.
+Para generar los datos, usaremos la función generada en el ejercicio 1. Usaremos $N=50$, $dim=2$ y $rango=[-50,50]$. Tras esto, simplemente tenemos que darle los datos a *plot*.
 
 ```{r Ejercicio 3}
-x <- simula_unif(50,2,c(-50,50))
+data.ej3 <- simula_unif(50,2,c(-50,50))
 
-x_plot <- x[[1]][1]
-y_plot <- x[[1]][2]
-
-for (i in 2:length(x)){
-  x_plot <- c(x_plot,x[[i]][1])
-  y_plot <- c(y_plot,x[[i]][2])
-}
-
-plot(x_plot,y_plot)
+plot(data.ej3)
 ```
 
 #### Ejercicio 4.
@@ -99,17 +70,9 @@ Mostrar los datos generados por una Gaussiana.
 Realizaremos lo mismo que en el ejercicio anterior, pero generando los datos con la función del ejercicio 2. Los parámetros son $N=50$, $dim=50$ y $sigma =[5,7]$.
 
 ```{r Ejercicio 4}
-x <- simula_gaus(50,2,c(5,7))
+data.ej4 <- simula_gaus(50,2,c(5,7))
 
-x_plot <- x[[1]][1]
-y_plot <- x[[1]][2]
-
-for (i in 2:length(x)){
-  x_plot <- c(x_plot,x[[i]][1])
-  y_plot <- c(y_plot,x[[i]][2])
-}
-
-plot(x_plot,y_plot)
+plot(data.ej4)
 ```
 
 #### Ejercicio 5.
@@ -124,24 +87,24 @@ $$ b = y_{1} - a x_{1}$$
 Hay que tener cuidado con el caso $x_{1}-x_{2} = 0$, es decir, que la linea sea vertical. Ese caso guardaremos $a = INF$ y $b = x_{1}$.
 
 ```{r Ejercicio 5}
-simula_recta <- function(){
-  puntos <- simula_unif(2,2,c(-50,50))
+simula_recta <- function(rango){
+  puntos <- simula_unif(2,2,rango)
   a <- 0
   b <- 0
   
-  if((puntos[[1]][1]-puntos[[2]][1]) != 0){
-    a <- (puntos[[1]][2]-puntos[[2]][2])/(puntos[[1]][1]-puntos[[2]][1])
-    b <- puntos[[1]][2] - a*puntos[[1]][1]
+  if((puntos[1,1]-puntos[2,1]) != 0){
+    a <- (puntos[1,2]-puntos[2,2])/(puntos[1,1]-puntos[2,1])
+    b <- puntos[1,2] - a*puntos[1,1]
   }
   else{
     a <- Inf
-    b <- puntos[[1]][1]
+    b <- puntos[1,1]
   }
   
   c(a,b)
 }
 
-simula_recta()
+simula_recta(c(-50,50))
 
 ```
 
@@ -151,32 +114,32 @@ Etiquetar puntos aleatorios según una recta.
 
 Tenemos que generar una recta y los puntos. Tras esto, generamos un vector con las etiquetas, según el signo de $f(x,y) = y-ax-b$.
 
-Una vez tenemos todos los datos, mostramos los datos con tipos de puntos distintos.
+Una vez tenemos todos los datos, mostramos los datos con tipos de puntos distintos y la recta con la función *abline*.
 
 ```{r Ejercicio 6}
-recta <- simula_recta()
-x <- simula_unif(50,2,c(-50,50))
-x_plot <- x[[1]][1]
-y_plot <- x[[1]][2]
+#Simulacion de recta y datos
+recta <- simula_recta(c(-50,50))
+data.ej6 <- simula_unif(50,2,c(-50,50))
 
-for (i in 2:length(x)){
-  x_plot <- c(x_plot,x[[i]][1])
-  y_plot <- c(y_plot,x[[i]][2])
-}
-
-f <- function(x,y){
+#Funcion de evaluacion de recta
+eval.recta <- function(x,y){
   y-recta[1]*x-recta[2]
 }
-
+#Funcion de clasificacion
 clasifica <- function(f,x,y){
   sign(f(x,y))
 }
 
-clas <- clasifica(f,x_plot,y_plot)
+clas <- clasifica(eval.recta,data.ej6[,1],data.ej6[,2])
 
-plot(x_plot[clas > 0], y_plot[clas > 0], pch = 1, col = 2,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
+#Plot:
+#   Positivos
+#   Recta (usando abline)
+#   Negativos
+
+plot(data.ej6[clas > 0,], pch = 1, col = 2,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
 abline(a = recta[2], b = recta[1])
-points(x_plot[clas < 0], y_plot[clas < 0], pch = 5, col = 4)
+points(data.ej6[clas < 0,], pch = 5, col = 4)
 ```
 
 #### Ejercicio 7.
@@ -186,6 +149,7 @@ Etiquetar puntos aleatorios según una función.
 Vamos a seguir los mismos pasos que el ejercicio anterior. La diferencia que encontramos es que las funciones no son rectas y por tanto, no nos vale la misma forma de dibujar la función. Para poder dibujarlas, usaremos la función de R *contour()*.
 
 ```{r Ejercicio7}
+#Definicion de funciones
 f1 <- function(x,y){
   (x-10)**2+(y-20)**2 - 400
 }
@@ -198,29 +162,32 @@ f3 <- function(x,y){
 f4 <- function(x,y){
   y - 20*x**2 - 5*x + 3
 }
-draw.clasificacion <- function(f,x,y){
-  clas <- clasifica(f,x,y)
+
+#Funcion de dibujado
+draw.clasificacion <- function(f,data,rango){
+  clas <- clasifica(f,data[,1],data[,2])
   x_graph = seq(-50,50,length.out = 500)
   y_graph = seq(-50,50,length.out = 500)
   z = outer(x_graph, y_graph,f)
-  contour(x_graph,y_graph,z, levels = 0, drawlabels = FALSE,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
-  points(x[clas > 0], y[clas > 0], pch = 1, col = 2)
-  points(x[clas < 0], y[clas < 0], pch = 5, col = 4)
+  contour(x_graph,y_graph,z, levels = 0, drawlabels = FALSE,xlim =rango, ylim=rango, xlab = "x", ylab = "y")
+  points(data[clas > 0,], pch = 1, col = 2)
+  points(data[clas < 0,], pch = 5, col = 4)
 }
 ```
 
 Una vez tenemos hemos creado la función para dibujar la clasificación, solo tenemos que ejecutarlas pasando las distintas funciones. Por ejemplo, para la función 1 sería:
+
 ```{r Ejercicio7.1, eval=FALSE}
-draw.clasificacion(f1,x_plot,y_plot)
+draw.clasificacion(f1,data.ej6,c(-50,50))
 ```
 
 Y aquí están las gráficas.
 
 ```{r Ejercicio7.2, echo = FALSE}
-draw.clasificacion(f1,x_plot,y_plot)
-draw.clasificacion(f2,x_plot,y_plot)
-draw.clasificacion(f3,x_plot,y_plot)
-draw.clasificacion(f4,x_plot,y_plot)
+draw.clasificacion(f1,data.ej6,c(-50,50))
+draw.clasificacion(f2,data.ej6,c(-50,50))
+draw.clasificacion(f3,data.ej6,c(-50,50))
+draw.clasificacion(f4,data.ej6,c(-50,50))
 ```
 
 #### Ejercicio 8.
@@ -234,30 +201,41 @@ Después, generamos dos vectores, que representán la clasificación de cada grupo.
 Tras modificar las etiquetas, solo tenemos que repetir la respresentación del ejercicio 6.
 
 ```{r Ejercicio 8}
-clas <- clasifica(f,x_plot,y_plot)
+clas <- clasifica(eval.recta,data.ej6[,1],data.ej6[,2])
 
-x = c(x_plot[clas < 0],x_plot[clas > 0])
-y = c(y_plot[clas < 0], y_plot[clas > 0])
+#Ordenamos los datos, primero negativos y luego positivos
+data.ej8 = rbind(data.ej6[clas < 0,], data.ej6[clas > 0,])
 
 #Negativos
 long = length(clas[clas<0])
 valores_camb = trunc(long/10)
-clas_neg = rep(c(TRUE,FALSE),times=c(valores_camb,long-valores_camb))
+
+clas_neg = rep(c(1,-1),times=c(valores_camb,long-valores_camb))
 clas_neg = sample(clas_neg,size = long)
 #Positivos
 long = length(clas[clas>0])
 valores_camb = trunc(long/10)
-clas_pos = rep(c(TRUE,FALSE),times=c(long-valores_camb,valores_camb))
+
+clas_pos = rep(c(1,-1),times=c(long-valores_camb,valores_camb))
 clas_pos = sample(clas_pos,size = long)
 
-clas = c(clas_neg,clas_pos)
+#Unimos las etiquetas en un unico vector
+label.ej8 = c(clas_neg,clas_pos)
 
-plot(x[clas == TRUE], y[clas == TRUE], pch = 1, col = 2,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
+#Mostramos resultados
+plot(data.ej8[label.ej8 == 1,], pch = 1, col = 2,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
 abline(a = recta[2], b = recta[1])
-points(x[clas == FALSE], y[clas == FALSE], pch = 5, col = 4)
+points(data.ej8[label.ej8 == -1,], pch = 5, col = 4)
 ```
 
-### Apartado 2: Ajuste del Algoritmo Perceptron
+## Apartado 2: Ajuste del Algoritmo Perceptron
+
+
+#### Ejercicio 1:
+
+Implementa el algoritmo perceptron.
+
+Vamos a hacer una pequeña modificación sobre lo que nos pide el ejercicio. Además de devolver los coeficientes calculados, devolveremos el número de iteraciones necesarias para conseguirlo. Este dato nos será de gran utilidad en el resto de la sección.
 
 ```{r ajusta_PLA}
 # Calcula el hiperplano para clasificar
@@ -281,50 +259,608 @@ ajusta_PLA <- function(datos, label, max_iter, vini){
       
       if(sign(t(c(datos[i,],1)) %*% coef) != label[i]){
         coef <- coef + label[i]*c(datos[i,],1)
-        cambio = TRUE 
+        cambio = TRUE
       }
       i <- i+1
     }
     
     iteracion <- iteracion + 1
-    print("Se ha completado la iteración ")
-    print(iteracion)
   }
   
-  return(coef)
+  return(list(coef,iteracion))
 }
 ```
 
-```{r muestraResultado}
-data <- matrix(runif(100,-50,50),ncol = 2)
-recta <- simula_recta()
+#### Ejercicio 2
 
-f <- function(x,y){
-  y-recta[1]*x-recta[2]
-}
+Primero, para ver que funciona correctamente, vamos a mostrar los resultados cuando tomamos como coeficientes iniciales el vector *(0,0,0)*.
 
-label <- sign(f(data[,1],data[,2]))
+```{r muestraResultado, echo=FALSE }
+label <- sign(eval.recta(data.ej6[,1],data.ej6[,2]))
 
-coef <- ajusta_PLA(data,label,1000,runif(3,-50-50))
+info_PLA <- ajusta_PLA(data.ej6,label,1000,c(0,0,0))
 
+cat("Se han realizado ", info_PLA[[2]]," iteraciones.")
+coef <- info_PLA[[1]]
 h <- function(x,y){
     x*coef[1]+ y*coef[2] + coef[3]
 }
 
-draw.clasificacion <- function(f,x,y,label){
+draw.clasificacion <- function(f,data,label,rango){
   x_graph = seq(-50,50,length.out = 500)
   y_graph = seq(-50,50,length.out = 500)
   z = outer(x_graph, y_graph,f)
-  contour(x_graph,y_graph,z, levels = 0, drawlabels = FALSE,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
-  points(x[label > 0], y[label > 0], pch = 1, col = 2)
-  points(x[label < 0], y[label < 0], pch = 5, col = 4)
+  contour(x_graph,y_graph,z, levels = 0, drawlabels = FALSE,xlim =rango, ylim=rango, xlab = "x", ylab = "y")
+  points(data[label > 0,], pch = 1, col = 2)
+  points(data[label <= 0,], pch = 5, col = 4)
 }
 
-draw.clasificacion(h,data[,1],data[,2],label)
+draw.clasificacion(h,data.ej6,label,c(-50,50))
 ```
 
-### Apartado 3: Regresión Lineal
+Como podemos ver, no obtenemos exactamente la misma linea que en el apartado anterior, pero obtenemos una linea que separa también perfectamente los conjuntos de puntos.
 
-Tools->import->datos (marcar checkbox no tratar como factor(asFactor NO)) (es read.csv())
-La primera es la etiqueta, los demás, niveles de grises
-Visualización con *image(datos)* 
+Tras comprobar que funciona correctamente, vamos a obtener el número de iteraciones medio, dados coeficientes iniciales *runif(3,0,1)*.
+
+```{r Ej2.2, echo=FALSE}
+media = 0
+
+for(i in 1:10){
+  info_PLA <- ajusta_PLA(data.ej6,label,1000,runif(3,0,1))
+  media <- media + info_PLA[[2]]
+}
+
+media <- media/10
+
+cat("La media de las 10 ejecuciones del PLA es: ", media)
+```
+
+#### Ejercicio 3
+
+Para calcular el porcentaje de fallos, realizamos:
+
+$$\frac{\sum_{n} |etiq_{i} - pred_{i}|}{n} * 0.5  $$
+
+Aclarar que multiplicamos por $0.5$ ya que, si fallamos al clasificar, en la sumatoria aparecerá un $+2$. Multiplicando por $0.5$ se arregla el error.
+
+Un ejemplo del código que realiza esto es el siguiente:
+
+```{r , eval=FALSE}
+info_PLA <- ajusta_PLA(data.ej8,label.ej8,10,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(label.ej8-sign(h(data.ej8[,1],data.ej8[,2]))))*0.5
+```
+
+
+Realizamos este ajuste a cada una de las soluciones obtenidas con el PLA, con 10, 100 y 1000 iteraciones respectivamente
+
+```{r Ej2.3, echo=FALSE}
+
+info_PLA <- ajusta_PLA(data.ej8,label.ej8,10,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(label.ej8-sign(h(data.ej8[,1],data.ej8[,2]))))*0.5
+cat("PLA con 10 iteraciones")
+cat("Porcentaje de fallos: ",error)
+
+info_PLA <- ajusta_PLA(data.ej8,label.ej8,100,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(label.ej8-sign(h(data.ej8[,1],data.ej8[,2]))))*0.5
+cat("PLA con 100 iteraciones")
+cat("Porcentaje de fallos: ",error)
+
+info_PLA <- ajusta_PLA(data.ej8,label.ej8,1000,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(label.ej8-sign(h(data.ej8[,1],data.ej8[,2]))))*0.5
+cat("PLA con 1000 iteraciones")
+cat("Porcentaje de fallos: ",error)
+
+```
+
+Para empezar, podemos ver que hay error. Es lógico, al usar los datos del ejercicio 8 del apartado anterior, tenemos datos que no es posible separar por una línea, luego necesariamente aparecerá dicho error.
+
+Por otro lado, el error que obtenemos parece reducirse con el paso de las iteraciones, pero veremos en el próximo ejercicio que no necesariamente es así.
+
+#### Ejercicio 4
+
+Repetimos el mismo análisis que en el apartado anterior, pero con la primera función del apartado 7.
+
+```{r Ej5.3.4, echo=FALSE}
+
+labels <- clasifica(f1,data.ej6[,1],data.ej6[,2])
+
+info_PLA <- ajusta_PLA(data.ej6,labels,10,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(labels-sign(h(data.ej6[,1],data.ej6[,2]))))*0.5
+cat("PLA con 10 iteraciones")
+cat("Porcentaje de fallos: ",error)
+
+info_PLA <- ajusta_PLA(data.ej6,labels,100,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(labels-sign(h(data.ej6[,1],data.ej6[,2]))))*0.5
+cat("PLA con 100 iteraciones")
+cat("Porcentaje de fallos: ",error)
+
+info_PLA <- ajusta_PLA(data.ej6,labels,1000,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(labels-sign(h(data.ej6[,1],data.ej6[,2]))))*0.5
+cat("PLA con 1000 iteraciones")
+cat("Porcentaje de fallos: ",error)
+```
+
+Volvemos a estar en las mismas, los datos no son separables linealmente, luego hay errores. En este caso, podríamos intentar ajustar con nuestro PLA esta función, cambiando los datos de la entrada del algoritmo para que tenga en cuenta términos cuadráticos. Pero de manera lineal, estos son los valores que cabría esperar.
+
+En cuanto a los errores, en este caso vemos como no es monótonamente decreciente. Esto se debe a que en realidad, la recta generada por el algoritmo PLA va modificandose, pero sin controlar de ninguna manera si va a mejor o no. Por tanto, puede que con más iteraciones, no mejore el resultado si no que empeore, como podemos ver aquí.
+
+#### Ejercicio 5
+
+Vamos a generar una función, *dibuja_PLA*, que nos va dibujando las diferentes rectas por las que va pasando la ejecución del PLA.
+
+```{r Ej5.3.5}
+
+dibuja_PLA <- function(datos, label, max_iter, vini){
+  coef <- vini
+  
+  for( i in 1:max_iter){
+    info_PLA <- ajusta_PLA(datos,label,1,coef)
+    coef <- info_PLA[[1]]
+    error <- mean(abs(label-sign(datos[,1]*coef[1]+ datos[,2]*coef[2] + coef[3])))*0.5
+    
+    print(paste("Iteracion: ",i))
+    print(paste("Porcentaje de fallos: ",error))
+    
+    plot(datos[label > 0,], pch = 1, col = 2,xlim =c(-50,50), ylim=c(-50,50), xlab = "x", ylab = "y")
+    points(datos[label <= 0,], pch = 5, col = 4)
+    abline(-coef[3]/coef[2], -coef[1]/coef[2])
+  }
+}
+```
+
+Y usamos esa función para mostrar, por ejemplo, los primeros 5 pasos.
+
+```{r Animacion 5.3.5, echo=FALSE}
+
+dibuja_PLA(data.ej8,label.ej8,5,c(0,0,0))
+
+```
+
+#### Ejercicio 6
+
+Para mejorar el algoritmo PLA, lo que vamos a almacenar siempre la mejor solución por la que hayamos pasado. Teniendo esto, nuestro PLA funcionará como una función de busqueda, que explora el espacio de soluciones(que es infinito), y nos devuelve el mejor valor que ha encontrado en su exploración.
+
+```{r Ej5.3.6}
+ajusta_PLA_MOD <- function(datos, label, max_iter, vini){
+  cambio = TRUE
+  coef = vini
+  iteracion = 0
+  num_datos = length(label)+1
+  mejor_error = 1
+  mejor_coef = c(0,0,0)
+  
+  while(cambio && iteracion < max_iter){
+    i=1
+    cambio = FALSE
+    
+    while(i<num_datos){
+      
+      if(sign(t(c(datos[i,],1)) %*% coef) != label[i]){
+        coef <- coef + label[i]*c(datos[i,],1)
+        cambio = TRUE
+        
+        error <- mean(abs(label-sign(datos[,1]*coef[1]+ datos[,2]*coef[2] + coef[3])))*0.5
+        if(mejor_error > error){
+          mejor_error <- error
+          mejor_coef <- coef
+        }
+      }
+      i <- i+1
+    }
+    
+    iteracion <- iteracion + 1
+  }
+  
+  return(list(mejor_coef,iteracion))
+}
+```
+
+Y ahora, lo usamos para las 4 funciones indicadas.
+
+```{r dem, echo=FALSE}
+#f1
+labels <- clasifica(f1,data.ej6[,1],data.ej6[,2])
+info_PLA <- ajusta_PLA_MOD(data.ej6,labels,1000,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(labels-sign(h(data.ej6[,1],data.ej6[,2]))))*0.5
+print("Funcion 1")
+print(paste("Porcentaje de fallos: ",error))
+#f2
+labels <- clasifica(f2,data.ej6[,1],data.ej6[,2])
+info_PLA <- ajusta_PLA_MOD(data.ej6,labels,1000,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(labels-sign(h(data.ej6[,1],data.ej6[,2]))))*0.5
+print("Funcion 2")
+print(paste("Porcentaje de fallos: ",error))
+#f3
+labels <- clasifica(f3,data.ej6[,1],data.ej6[,2])
+info_PLA <- ajusta_PLA_MOD(data.ej6,labels,1000,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(labels-sign(h(data.ej6[,1],data.ej6[,2]))))*0.5
+print("Funcion 3")
+print(paste("Porcentaje de fallos: ",error))
+#f4
+labels <- clasifica(f4,data.ej6[,1],data.ej6[,2])
+info_PLA <- ajusta_PLA_MOD(data.ej6,labels,1000,c(0,0,0))
+coef <- info_PLA[[1]]
+error <- mean(abs(labels-sign(h(data.ej6[,1],data.ej6[,2]))))*0.5
+print("Funcion 4")
+print(paste("Porcentaje de fallos: ",error))
+```
+
+Destacar que, para la función 1, usada en el ejercicio 4 de esta sección, se ha conseguido una gran mejora, con el mismo número de iteraciones, gracias a la nueva versión del algoritmo PLA.
+
+## Apartado 3: Regresión Lineal
+
+#### Ejercicio 1
+
+Carga de datos.
+
+```{r Ej5.4.1}
+rawdata.num <- read.table("~/AA/data/zip.train", quote="\"", comment.char="", stringsAsFactors=FALSE)
+```
+
+#### Ejercicio 2
+
+Guardar solo los 1 y 5.
+
+Si vemos los datos que hemos guardado anteriormente, vemos como la primera columna contiene las etiquetas, y las demás 256 columnas, los datos.
+
+Por tanto, para tomar dichos datos, iteramos por la primera columna, buscando por los valores 1 y 5, y luego almacenando las demás columnas en forma de matriz.
+
+```{r Ej5.4.2}
+rawdata.5 <- rawdata.num[rawdata.num[,1] == 5,2:257]
+rawdata.1 <- rawdata.num[rawdata.num[,1] == 1,2:257]
+
+data.5 = data.matrix(rawdata.5)
+data.1 = data.matrix(rawdata.1)
+
+```
+
+Vamos a guardar los datos como dos grandes matrices, pero nos va a ser necesario más adelante transformar sus filas en matrices. Para ello, utilizamos la siguiente función, que de paso normaliza los datos entre 0 y 1.
+
+```{r Ej5.4.2b}
+trans.matriz <- function(data){
+  return(matrix((data*0.5)+0.5,16))
+}
+
+```
+
+Finalmente, para mostrar las imágenes usamos la función *image* y nos ayudamos de nuestra función *trans.matriz*. Por la manera de usar los datos de *image* nos vemos obligados a realizar una inversión del orden de las columnas, para poder ver las imágenes en una orientación correcta.
+
+```{r Ej5.4.2c}
+image(trans.matriz(data.5[1,])[,16:1])
+image(trans.matriz(data.1[1,])[,16:1])
+```
+
+#### Ejercicio 3
+
+La función que nos devuelve la intensidad media no necesita ser realizada, pues ya disponemos de la función *mean* de R. La función que nos da la simetría sí tiene que realizarse. En la función, transformamos los datos a una matriz, para después iterar por las columnas en ambas direcciones, y restándolas. Luego las sumamos en valor absoluto y le cambiamos el signo.
+
+El código que implementa dicha operación es:
+
+```{r}
+simetria <- function(data){
+  mat <- trans.matriz(data)
+  return(-sum(abs(mat[,1:16] - mat[,16:1])))
+}
+```
+
+Ahora, aplicaremos a cada fila de la matriz ambas funciones, usando para ello la función *apply* de R. Tras calcular los descriptores de cada clase, los juntamos usando *rbind* y creamos un vector con las etiquetas.
+
+```{r}
+descriptores.1 <- t(apply(data.1,MARGIN = 1, FUN = function(data){return(c(mean(trans.matriz(data)),simetria(data)))}))
+descriptores.5 <- t(apply(data.5,MARGIN = 1, FUN = function(data){return(c(mean(trans.matriz(data)),simetria(data)))}))
+descriptores <- rbind(descriptores.1,descriptores.5)
+etiquetas <- rep(c(1,5), c(nrow(descriptores.1),nrow(descriptores.5)))
+```
+
+#### Ejercicio 4
+
+Simplemente, tomamos los descriptores como datos de entrada para *plot* y usamos etiquetas para los colores (se añade un +1 para obtener colores más diferenciables).
+```{r}
+plot(descriptores, col = etiquetas+1, xlab = "Intensidad Promedio", ylab = "Simetria")
+```
+
+#### Ejercicio 5
+
+Para crear la función que realiza la regresión lineal, vamos a realizar los siguientes pasos:
+
+1. Calcular SVD de los datos.
+2. Calcular la inversa de la matriz diagonal obtenida con el SVD.
+3. Calcular la pseudoinversa de los datos.
+4. Multiplicar la pseudoinversa por las etiquetas.
+
+Aquí tenemos el código que lo implementa:
+
+```{r}
+Regress_lin <- function(datos,label){
+  s <- svd(datos)
+  D <- diag(s$d)
+  Dinv <- solve(D)
+  
+  p.inversa <- (s$v %*% Dinv %*% Dinv %*% t(s$v)) %*% t(datos)
+
+  return(p.inversa%*%label)
+}
+```
+
+#### Ejercicio 6
+
+Para realizar la regresión lineal de los datos, tomamos la intensidad como datos, y la simetría como etiquetas. Entonces obtendremos una línea que, para una intensidad dada, nos tratará de estimar la simetría.
+
+El resultado es el siguiente: 
+
+```{r, echo=FALSE}
+w <- Regress_lin(cbind(descriptores[,1],1),descriptores[,2])
+
+plot(descriptores, col = etiquetas+1)
+abline(w[2,1],w[1,1])
+```
+
+Como podemos ver, funciona correctamente, dandonos una línea en la dirección que parece correcta, pero algo elevada con respecto a la nube de puntos rosa, atraída por los puntos de la parte superior (puntos rojos).
+
+#### Ejercicio 7
+
+En este apartado, se pide clasificar unos datos usando la regresión lineal. Para ello, los datos serán la entrada y su clasificación, en forma de 1 y -1, sus etiquetas en el algoritmo.
+
+La función que vamos a estudiar en este caso es una recta.
+
+Veamos como se comportan en los siguientes casos.
+
+#### a
+
+Error en la muestra, con 100 datos. Repetido 1000 veces.
+
+```{r 5.4.7a, echo=FALSE}
+clas.recta <- function(x,y){
+  sign(y-recta.ej4.7[1]*x-recta.ej4.7[2])
+}
+media = 0
+
+for(i in 1:1000){
+  data.ej4.7 <- simula_unif(100,2,c(-10,10))
+  recta.ej4.7 <- simula_recta(c(-10,10))
+  
+  clasificacion <- clas.recta(data.ej4.7[,1],data.ej4.7[,2])
+  
+  w <- Regress_lin(cbind(data.ej4.7,1),clasificacion)
+  
+  error <- mean(abs(clasificacion-sign(w[1,1]*data.ej4.7[,1]+w[2,1]*data.ej4.7[,2]+w[3,1]))*0.5)
+    
+  media <- media + error
+}
+
+print(paste("Error medio: ",media/1000))
+```
+
+#### b
+
+Error fuera de la muestra. 100 datos para realizar la regresión, 1000 para calcular el error. Repetido 1000 veces.
+
+```{r 5.4.7b, echo=FALSE}
+clas.recta <- function(x,y){
+  sign(y-recta.ej4.7[1]*x-recta.ej4.7[2])
+}
+media = 0
+
+for(i in 1:1000){
+  data.in <- simula_unif(100,2,c(-10,10))
+  data.out <- simula_unif(1000,2,c(-10,10))
+  recta.ej4.7 <- simula_recta(c(-10,10))
+  
+  clasificacion.in <- clas.recta(data.in[,1],data.in[,2])
+  clasificacion.out <- clas.recta(data.out[,1],data.out[,2])
+  
+  w <- Regress_lin(cbind(data.in,1),clasificacion.in)
+  
+  error <- mean(abs(clasificacion.out-sign(w[1,1]*data.out[,1]+w[2,1]*data.out[,2]+w[3,1]))*0.5)
+    
+  media <- media + error
+}
+
+print(media/1000)
+```
+
+Para entender este resultado, hay que compararlo con el de **a**. Como podríamos esperar, este error es mayor, por calcular el error fuera de la muestra y no dentro. Además, el número de datos de los que aprendemos es bastante pequeño comparado con los que tenemos que clasificar después, lo que complica más aún la tarea a nuestra regresión lineal.
+
+Además, en estos casos el PLA nos daría siempre aciertos, pues son linealmente separables.
+
+Pero hay que destacar un detalle, los dos valores se parecen mucho y son bastante bajos, además que su cálculo es directo, y por tanto bastante más rápido que el PLA. Esto nos dice que, pese a ser más preciso el PLA en este caso conceto, nos puede interesar en alguna ocasión la regresión, por ser más rápida y suficientemente buena.
+
+#### c
+
+Iteraciones necesarias para ajustar PLA, usando la regresión como punto de partida.
+
+Para poder comparar los resultados, vamos a calcular la media de iteraciones del PLA que nos pide el ejercicio y además, la media cuando el PLA parte sin ninguna información, es decir, con coeficientes iniciales (0,0,0).
+
+```{r 5.4.7c, echo=FALSE}
+clas.recta <- function(x,y){
+  sign(y-recta.ej4.7[1]*x-recta.ej4.7[2])
+}
+media_reg = 0
+media = 0
+
+for(i in 1:1000){
+  data.ej4.7 <- simula_unif(10,2,c(-10,10))
+  recta.ej4.7 <- simula_recta(c(-10,10))
+  
+  clasificacion <- clas.recta(data.ej4.7[,1],data.ej4.7[,2])
+  
+  w <- Regress_lin(cbind(data.ej4.7,1),clasificacion)
+  
+  info_PLA <- ajusta_PLA(data.ej4.7,clasificacion,1000,c(w[1,1],w[2,1],w[3,1]))
+
+  media_reg <- media_reg + info_PLA[[2]]
+  
+  info_PLA <- ajusta_PLA(data.ej4.7,clasificacion,1000,c(0,0,0))
+
+  media <- media + info_PLA[[2]]
+}
+print("Iteraciones con regresión como partida")
+print(media_reg/1000)
+print("Iteraciones sin información de partida")
+print(media/1000)
+```
+
+Como podemos ver, reducimos el número de iteraciones utilizando los datos de la regresión. Esto podría usarse para acelerar el algoritmo del PLA en situaciones donde sea necesario.
+
+##### Ejercicio 8
+
+Vamos a realizar algo parecido al ejercicio anterior, pero en este caso la función no será una línea, si no una función cuadrática:
+
+$$ f(x,y) = dign(x^{2} + y^{2} - 25) $$
+
+#### a
+
+Error dentro de la muestra, pero clasificando con una función lineal. Añadimos un 10% de ruido.
+
+```{r 5.4.8a,echo=FALSE}
+f8 <- function(x,y){
+  return(sign(x^2 + y^2 - 25))
+}
+
+media = 0
+
+for(i in 1:1000){
+  data.ej4.8 <- simula_unif(1000,2,c(-10,10))
+  
+  clasificacion <- f8(data.ej4.8[,1],data.ej4.8[,2])
+  
+  data.ej4.8 = rbind(data.ej4.8[clasificacion < 0,], data.ej4.8[clasificacion > 0,])
+
+  #Negativos
+  long = length(clasificacion[clasificacion<0])
+  valores_camb = trunc(long/10)
+  
+  clas_neg = rep(c(1,-1),times=c(valores_camb,long-valores_camb))
+  clas_neg = sample(clas_neg,size = long)
+  #Positivos
+  long = length(clasificacion[clasificacion>0])
+  valores_camb = trunc(long/10)
+  
+  clas_pos = rep(c(1,-1),times=c(long-valores_camb,valores_camb))
+  clas_pos = sample(clas_pos,size = long)
+  
+  clasificacion = c(clas_neg,clas_pos)
+  
+  w <- Regress_lin(cbind(data.ej4.8,1),clasificacion)
+  
+  error <- mean(abs(clasificacion-sign(w[1,1]*data.ej4.8[,1]+w[2,1]*data.ej4.8[,2]+w[3,1])))*0.5
+    
+  media <- media + error
+}
+print("Error medio: ")
+print(media/1000)
+
+```
+
+El error obtenido es muy grande. Esto es lógico, pues estamos tratando clasificar una función cuadrática mediante una línea.
+
+#### b
+
+Ahora, consideramos también los datos $x*y$, $x^{2}$ y $y^{2}$. Realizamos una unica iteración y mostramos los resultados
+
+```{r 5.4.8b, echo=FALSE}
+data.ej4.8 <- simula_unif(1000,2,c(-10,10))
+  
+clasificacion <- f8(data.ej4.8[,1],data.ej4.8[,2])
+
+data.ej4.8 = rbind(data.ej4.8[clasificacion < 0,], data.ej4.8[clasificacion > 0,])
+
+#Negativos
+long = length(clasificacion[clasificacion<0])
+valores_camb = trunc(long/10)
+
+clas_neg = rep(c(1,-1),times=c(valores_camb,long-valores_camb))
+clas_neg = sample(clas_neg,size = long)
+#Positivos
+long = length(clasificacion[clasificacion>0])
+valores_camb = trunc(long/10)
+
+clas_pos = rep(c(1,-1),times=c(long-valores_camb,valores_camb))
+clas_pos = sample(clas_pos,size = long)
+
+clasificacion = c(clas_neg,clas_pos)
+
+mod.data = cbind(1,data.ej4.8[,1],data.ej4.8[,2],data.ej4.8[,1]*data.ej4.8[,2],data.ej4.8[,1]^2,data.ej4.8[,2]^2)
+
+w <- as.vector(Regress_lin(mod.data,clasificacion))
+
+x = data.ej4.8[,1]
+y = data.ej4.8[,2]
+
+error <- mean(abs(clasificacion-sign(w[1]+mod.data[,2]*w[2]+mod.data[,3]*w[3]+mod.data[,4]*w[4]+mod.data[,5]*w[5]+mod.data[,6]*w[6])))*0.5
+print("Error medio: ")
+print(error)
+
+#Representacion grafica
+x_graph = seq(-10,10,length.out = 500)
+y_graph = seq(-10,10,length.out = 500)
+z = outer(x_graph, y_graph,function(x,y) {w[1]+x*w[2]+y*w[3]+x*y*w[4]+(x^2)*w[5]+(y^2)*w[6]})
+contour(x_graph,y_graph,z, levels = 0, drawlabels = FALSE,xlim =c(-10,10), ylim=c(-10,10), xlab = "x", ylab = "y")
+points(data.ej4.8[clasificacion > 0,], pch = 1, col = 2)
+points(data.ej4.8[clasificacion <= 0,], pch = 5, col = 4)
+```
+
+El error se ha reducido mucho con respecto al intento anterior. Al tener más parámetros que ajustar, y ser estos de orden cuadrático, podemos clasificar mucho mejor. Además, si tenemos en cuenta que hay un 10% de error añadido, el ajuste obtenido es bastante bueno.
+
+#### c
+
+Ahora repetimos el experimento anterior, pero calculamos el error con puntos de fuera de la muestra.
+
+```{r 5.4.8c, echo=FALSE}
+f8 <- function(x,y){
+  return(sign(x^2 + y^2 - 25))
+}
+
+media = 0
+
+for(i in 1:1000){
+  data.ej4.8 <- simula_unif(1000,2,c(-10,10))
+  
+  clasificacion <- f8(data.ej4.8[,1],data.ej4.8[,2])
+  
+  data.ej4.8 = rbind(data.ej4.8[clasificacion < 0,], data.ej4.8[clasificacion > 0,])
+
+  #Negativos
+  long = length(clasificacion[clasificacion<0])
+  valores_camb = trunc(long/10)
+  
+  clas_neg = rep(c(1,-1),times=c(valores_camb,long-valores_camb))
+  clas_neg = sample(clas_neg,size = long)
+  #Positivos
+  long = length(clasificacion[clasificacion>0])
+  valores_camb = trunc(long/10)
+  
+  clas_pos = rep(c(1,-1),times=c(long-valores_camb,valores_camb))
+  clas_pos = sample(clas_pos,size = long)
+  
+  clasificacion = c(clas_neg,clas_pos)
+  mod.data = cbind(1,data.ej4.8[,1],data.ej4.8[,2],data.ej4.8[,1]*data.ej4.8[,2],data.ej4.8[,1]^2,data.ej4.8[,2]^2)
+  
+  w <- Regress_lin(mod.data,clasificacion)
+  
+  # Generación de puntos fuera de la muestra
+  data.ej4.8.out <- simula_unif(1000,2,c(-10,10))
+  clasificacion.out <- f8(data.ej4.8.out[,1],data.ej4.8.out[,2])
+  mod.data = cbind(1,data.ej4.8.out[,1],data.ej4.8.out[,2],data.ej4.8.out[,1]*data.ej4.8.out[,2],data.ej4.8.out[,1]^2,data.ej4.8.out[,2]^2)
+  
+  error <- mean(abs(clasificacion.out-sign(w[1]+mod.data[,2]*w[2]+mod.data[,3]*w[3]+mod.data[,4]*w[4]+mod.data[,5]*w[5]+mod.data[,6]*w[6])))*0.5
+    
+  media <- media + error
+}
+print("Error medio: ")
+print(media/1000)
+```
+
+Al no tener errores los datos que usamos para calcular el error, este baja mucho.
+
+Gracias al añadido de los términos cuadráticos, hemos mejorado el error, a un 7% de media, lo que es un buen resultado, más teniendo en cuenta que estamos viendo el error cometido fuera de la muestra. 
