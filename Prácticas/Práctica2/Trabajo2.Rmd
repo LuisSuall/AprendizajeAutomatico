@@ -1,0 +1,163 @@
+---
+title: "Trabajo 2"
+author: "Luis Suárez Lloréns"
+date: "13 de abril de 2016"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Apartado 1: Modelos lineales
+
+### Ejercicio 1
+
+#### Apartado a:
+
+Lo primero, va a ser obtener el gradiente de la función $E(u,v) = (u e^{v} - 2ve^{-u})^2$.
+
+\[
+\ \nabla E(u,v) = (2(u e^{v} - 2ve^{-u})(e^{v} + 2ve^{-u}), 2(u e^{v} - 2ve^{-u})(ue^{v} - 2e^{-u}))
+\]
+
+Una vez tenemos el gradiente, el método del descenso del gradiente nos dice que debemos movernos hacia donde nos indique $\nabla E(u,v)$. Por tanto, el siguiente paso es crear funciones tanto para $E(u,v)$ como para su gradiente.
+
+```{r Ejercicio1.1.a.2}
+E = function(u,v){
+  return( (u*exp(v) -  2*v*exp(-u))**2 )
+}
+
+grad.E = function(u,v){
+  dx = 2*(u*exp(v) -  2*v*exp(-u))*(exp(v)+2*v*exp(-u))
+  dy = 2*(u*exp(v) -  2*v*exp(-u))*(u*exp(v)-2*exp(-u))
+  return(c(dx,dy))
+}
+
+```
+
+Teniendo preparadas ya todas las funciones, creamos el procedimiento de descenso del gradiente.
+
+```{r Ejercicio1.1.a.3}
+descenso.gradiente = function(x,y,f,grad.f,tam.paso = 0.1, tolerancia = 10**-5, max.iter = 50){
+  valores.f = rep(0,max.iter)
+  idx = 1
+  
+  valores.f[idx] = f(x,y)
+  
+  while(f(x,y)>tolerancia && idx < max.iter){
+    grad = grad.f(x,y)
+    x = x - tam.paso*grad[1]
+    y = y - tam.paso*grad[2]
+    
+    idx = idx + 1
+    valores.f[idx] = f(x,y)
+  }
+  
+  return(list(x = x, y = y, iter = idx, error = valores.f[1:idx]))
+}
+
+descenso.gradiente(1,1,E,grad.E,tolerancia = 10**-14)
+
+```
+
+#### Apartado b
+
+##### 1)
+El primer paso, de nuevo, es encontrar el gradiente de la función $f = x^{2} + 2y^{2} + 2\sin(2\pi x)\sin(2\pi y)$.
+
+\[
+\ \nabla f(x,y) = (2x+4\pi \sin(2\pi y)\cos(2\pi x), 4y+ 4\pi \sin(2\pi x)\cos(2\pi y))
+\]
+
+Definimos las funciones:
+
+```{r Ejercicio1.1.b.1}
+f = function(x,y){
+  return(x**2+2*y**2+2*sin(2*pi*x)*sin(2*pi*y))
+}
+grad.f = function(x,y){
+  dx = 2*x + 4*pi*sin(2*pi*y)*cos(2*pi*x)
+  dy = 4*y + 4*pi*sin(2*pi*x)*cos(2*pi*y)
+  return(c(dx,dy))
+}
+```
+
+Volvemos a calcular el proceso del descenso del gradiente
+
+```{r Ejercicio1.1.b.2}
+data = descenso.gradiente(1,1,f,grad.f,tam.paso = 0.01, tolerancia = 10**-14)
+plot(data$error,type = "l")
+```
+
+```{r Ejercicio1.1.b.3}
+data = descenso.gradiente(1,1,f,grad.f,tam.paso = 0.1, tolerancia = 10**-14)
+plot(data$error,type = "l")
+```
+
+Del primero, vemos como se queda atascado en un mínimo local, pues el valor se estabiliza en 0.5, y como podemos ver en la segunda gráfica, la función llega a 0. La segunda, pese a acercarse al 0 de la función, se comporta de una manera errática, pues la tasa de aprendizaje es demasiado grande.
+
+##### 2)
+
+Ahora, vamos a ver los datos para diferentes puntos de partida:
+```{r}
+data = descenso.gradiente(0.1,0.1,f,grad.f,tam.paso = 0.01, tolerancia = 10**-14)
+cat(paste0("x:",data$x,"\ny:",data$y,"\nvalor mínimo:",data$error[data$iter]))
+```
+
+```{r}
+data = descenso.gradiente(1,1,f,grad.f,tam.paso = 0.01, tolerancia = 10**-14)
+cat(paste0("x:",data$x,"\ny:",data$y,"\nvalor mínimo:",data$error[data$iter]))
+```
+
+```{r}
+data = descenso.gradiente(-0.5,-0.5,f,grad.f,tam.paso = 0.01, tolerancia = 10**-14)
+cat(paste0("x:",data$x,"\ny:",data$y,"\nvalor mínimo:",data$error[data$iter]))
+```
+
+```{r}
+data = descenso.gradiente(-1,-1,f,grad.f,tam.paso = 0.01, tolerancia = 10**-14)
+cat(paste0("x:",data$x,"\ny:",data$y,"\nvalor mínimo:",data$error[data$iter]))
+```
+
+### Ejercicio 2
+
+Vamos a definir la función de **Coordenada Descendente**, que realiza un proceso similar al gradiente descendente, pero avanzando sólo en una dirección cada vez.
+
+```{r}
+coordenada.descendente = function(x,y,f,grad.f,tam.paso = 0.1, tolerancia = 10**-5, max.iter = 50){
+  valores.f = rep(0,max.iter)
+  idx = 1
+  
+  valores.f[idx] = f(x,y)
+  
+  while(f(x,y)>tolerancia && idx < max.iter){
+    grad = grad.f(x,y)
+    x = x - tam.paso*grad[1]
+    grad = grad.f(x,y)
+    y = y - tam.paso*grad[2]
+    
+    idx = idx + 1
+    valores.f[idx] = f(x,y)
+  }
+  
+  return(list(x = x, y = y, iter = idx, error = valores.f[1:idx]))
+}
+```
+
+Ahora, vamos a probarlo con las funciones del ejercicio 1.1.
+
+```{r}
+coordenada.descendente(1,1,E,grad.E,tolerancia = 10**-14)
+```
+
+Como podemos ver, el descenso del gradiente si llega al mínimo mientras que coordenada descendente no. Si nos fijamos en los resultados, este método nos lleva a otro mínimo, lo cual impide encontrar el mínimo que sí habíamos encontrado antes. Esto no hace que no pueda encontrar un mínimo, pero nos hace pensar que el descenso del gradiente es más sólido que la coordenada descendente.
+
+Aquí podemos ver un ejemplo, cambiando la tasa de aprendizaje, de como es capaz de encontrar un mínimo.
+
+```{r}
+coordenada.descendente(1,1,E,grad.E,tam.paso = 0.05,tolerancia = 10**-14)
+```
+
+### Ejercicio 3
+
