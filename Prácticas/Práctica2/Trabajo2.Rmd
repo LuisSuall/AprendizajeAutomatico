@@ -1,7 +1,7 @@
 ---
 title: "Trabajo 2"
 author: "Luis Suárez Lloréns"
-date: "13 de abril de 2016"
+date: "3 de mayo de 2016"
 output: pdf_document
 ---
 
@@ -9,6 +9,9 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r conf.seed, echo=FALSE}
+set.seed(1010)
+```
 ## Apartado 1: Modelos lineales
 
 ### Ejercicio 1
@@ -120,6 +123,12 @@ data = descenso.gradiente(-1,-1,f,grad.f,tam.paso = 0.01, tolerancia = 10**-14)
 cat(paste0("x:",data$x,"\ny:",data$y,"\nvalor mínimo:",data$error[data$iter]))
 ```
 
+De estos datos, podemos observar que es muy fácil caer en un mínimo local. 
+
+Este es una de las mayores dificultades que tienen que afrontar este tipo de métodos, pues como podemos ver, no tienen manera de salir de un mínimo local que no sea aumentar el tamaño de paso. Pero en ese caso, se pierde la habilidad de afinar y conseguir fácilmente el mínimo en caso de tener bien posicionado el punto de partida, es más, se puede incluso salir del mínimo y no obtener ningún buen resultado.
+
+Además, el método no va siempre al mismo mínimo en caso de encontrar una buena solución, lo que también podría llegar a ser un problema.
+
 ### Ejercicio 2
 
 Vamos a definir la función de **Coordenada Descendente**, que realiza un proceso similar al gradiente descendente, pero avanzando sólo en una dirección cada vez.
@@ -161,3 +170,437 @@ coordenada.descendente(1,1,E,grad.E,tam.paso = 0.05,tolerancia = 10**-14)
 
 ### Ejercicio 3
 
+Primero, vamos a definir el método de Newton.
+
+```{r}
+metodo.Newton = function(x,y,f,grad.f,hess.f, tolerancia = 10**-5, max.iter = 50){
+  valores.f = rep(0,max.iter)
+  idx = 1
+  
+  valores.f[idx] = f(x,y)
+  
+  while(f(x,y)>tolerancia && idx < max.iter){
+    grad = grad.f(x,y)
+    hess = hess.f(x,y)
+    
+    diff.w = - solve(hess) %*% grad
+    x = x + diff.w[1]
+    y = y + diff.w[2]
+
+    idx = idx + 1
+    valores.f[idx] = f(x,y)
+  }
+  
+  return(list(x = x, y = y, iter = idx, error = valores.f[1:idx]))
+}
+```
+
+Para poder usar el método de Newton, necesitamos también calcular la matriz hessiana de la función.
+
+```{r}
+hess.f = function(x,y){
+  dxx = 2 - 8*pi*pi*sin(2*pi*y)*sin(2*pi*x)
+  dyy = 4 - 8*pi*pi*sin(2*pi*x)*sin(2*pi*y)
+  dxy = 8*pi*pi*cos(2*pi*y)*cos(2*pi*x)
+  return(matrix(c(dxx,dxy,dxy,dyy),2))
+}
+```
+
+Y lo probamos:
+
+```{r}
+data = metodo.Newton(1,1,f,grad.f,hess.f)
+plot(data$error,type = "l")
+```
+
+Como podemos ver, pese a usar este método, seguimos topandonos con un mínimo local, que nos impide alcanzar el mínimo buscado. Eso sí, la convergencia a ese mínimo local esmuy rápida.
+
+### Ejercicio 4
+
+Para empezar, vamos a reutilizar métodos de la práctica anterior para generar los datos y la recta. Generamos los datos y la recta y los clasificamos.
+```{r}
+#Funcion de generacion de datos
+simula_unif <- function(N,dim,rango){
+  matrix(runif(N*dim,rango[1],rango[2]),ncol = dim)
+}
+#Funcion de generacion de recta
+simula_recta <- function(rango){
+  puntos <- simula_unif(2,2,rango)
+  a <- 0
+  b <- 0
+  
+  if((puntos[1,1]-puntos[2,1]) != 0){
+    a <- (puntos[1,2]-puntos[2,2])/(puntos[1,1]-puntos[2,1])
+    b <- puntos[1,2] - a*puntos[1,1]
+  }
+  else{
+    a <- Inf
+    b <- puntos[1,1]
+  }
+  
+  c(a,b)
+}
+
+#Creamos los datos y la recta.
+datos.ej1.4 = simula_unif(100,2,c(-1,1))
+recta.ej1.4 = simula_recta(c(-1,1))
+
+#Funcion de evaluacion de recta
+recta = recta.ej1.4
+eval.recta <- function(x,y){
+  y-recta[1]*x-recta[2]
+}
+#Funcion de clasificacion
+clasifica <- function(f,x,y){
+  (sign(f(x,y))+1)/2
+}
+
+label.ej1.4 = clasifica(eval.recta,datos.ej1.4[,1],datos.ej1.4[,2])
+```
+
+Una vez hemos definido los datos, vamos a generar la función que nos va a calcular la regresión logística.
+
+```{r}
+Regresion.Logistica = function(data,label,vini,tam.paso = 0.01, tolerancia = 0.01, max.iter = 50){
+  valores.f = rep(0,max.iter)
+  idx = 1
+  current.coef = vini
+  last.coef = vini
+  dist.coef = tolerancia+1
+  data.extended = cbind(data,1)
+  labels = label
+  
+  while(dist.coef>tolerancia && idx < max.iter){
+    idx = idx + 1
+    last.coef = current.coef
+    samp = sample(nrow(data),nrow(data))
+    
+    for (j in samp){
+      g = -(label[j]*data.extended[j,])/(1+exp(label[j]*t(current.coef)*data.extended[j,]))
+      current.coef = current.coef - tam.paso*as.vector(g)
+    }
+    dist.coef = sqrt(sum((current.coef-last.coef)^2))
+
+  }
+
+  return(list(coeff = current.coef, iter = idx))
+}
+```
+
+Y ahora la usamos para los datos generados antes:
+```{r}
+resultados = Regresion.Logistica(datos.ej1.4,label.ej1.4,c(0,0,0),max.iter = 1000)
+coef.1.4 = resultados$coeff
+print(resultados)
+```
+
+Con esto, ya tenemos nuestros coeficientes. Ahora vamos a calcular el error fuera de la muestra. Creamos nuevos valores, lo etiquetamos, y consideramos el error como la media de los errores.
+
+```{r}
+logistic.function = function(x){exp(t(coef.1.4)*x)/(1+exp(t(coef.1.4)*x))}
+
+mean(abs(label.ej1.4-apply(cbind(datos.ej1.4,1), 1, logistic.function)))
+```
+
+### Ejercicio 5
+
+Primero, cargamos los datos y los preparamos como en la práctica anterior. Además cargamos todos los métodos necesarios de esa práctica.
+```{r}
+#PLA y regresion lineal
+ajusta_PLA_MOD <- function(datos, label, max_iter, vini){
+  cambio = TRUE
+  coef = vini
+  iteracion = 0
+  num_datos = length(label)+1
+  mejor_error = 1
+  mejor_coef = c(0,0,0)
+  
+  while(cambio && iteracion < max_iter){
+    i=1
+    cambio = FALSE
+    
+    while(i<num_datos){
+      
+      if(sign(t(c(datos[i,],1)) %*% coef) != label[i]){
+        coef <- coef + label[i]*c(datos[i,],1)
+        cambio = TRUE
+        
+        error <- mean(abs(label-sign(datos[,1]*coef[1]+ datos[,2]*coef[2] + coef[3])))*0.5
+        if(mejor_error > error){
+          mejor_error <- error
+          mejor_coef <- coef
+        }
+      }
+      i <- i+1
+    }
+    
+    iteracion <- iteracion + 1
+  }
+  
+  return(list(coef = mejor_coef,iter = iteracion))
+}
+Regress_lin <- function(datos,label){
+  s <- svd(datos)
+  D <- diag(s$d)
+  Dinv <- solve(D)
+  
+  p.inversa <- (s$v %*% Dinv %*% Dinv %*% t(s$v)) %*% t(datos)
+
+  return(p.inversa%*%label)
+}
+
+trans.matriz <- function(data){
+  return(matrix((data*0.5)+0.5,16))
+}
+simetria <- function(data){
+  mat <- trans.matriz(data)
+  return(-sum(abs(mat[,1:16] - mat[,16:1])))
+}
+```
+
+```{r}
+rawdatatrain.num <- read.table("~/AA/data/zip.train", quote="\"", comment.char="", stringsAsFactors=FALSE)
+
+rawdata.5 <- rawdatatrain.num[rawdatatrain.num[,1] == 5,2:257]
+rawdata.1 <- rawdatatrain.num[rawdatatrain.num[,1] == 1,2:257]
+
+data.5 = data.matrix(rawdata.5)
+data.1 = data.matrix(rawdata.1)
+
+descriptores.1 <- t(apply(data.1,MARGIN = 1, FUN = function(data){return(c(mean(trans.matriz(data)),simetria(data)))}))
+descriptores.5 <- t(apply(data.5,MARGIN = 1, FUN = function(data){return(c(mean(trans.matriz(data)),simetria(data)))}))
+descriptores.train <- rbind(descriptores.1,descriptores.5)
+etiquetas.train <- rep(c(1,-1), c(nrow(descriptores.1),nrow(descriptores.5)))
+
+rawdatatest.num <- read.table("~/AA/data/zip.test", quote="\"", comment.char="", stringsAsFactors=FALSE)
+
+rawdata.5 <- rawdatatest.num[rawdatatest.num[,1] == 5,2:257]
+rawdata.1 <- rawdatatest.num[rawdatatest.num[,1] == 1,2:257]
+
+data.5 = data.matrix(rawdata.5)
+data.1 = data.matrix(rawdata.1)
+
+descriptores.1 <- t(apply(data.1,MARGIN = 1, FUN = function(data){return(c(mean(trans.matriz(data)),simetria(data)))}))
+descriptores.5 <- t(apply(data.5,MARGIN = 1, FUN = function(data){return(c(mean(trans.matriz(data)),simetria(data)))}))
+descriptores.test <- rbind(descriptores.1,descriptores.5)
+etiquetas.test <- rep(c(1,-1), c(nrow(descriptores.1),nrow(descriptores.5)))
+
+```
+
+Con los datos cargados, calculamos la recta.
+```{r}
+reg.coef = Regress_lin(cbind(descriptores.train,1),etiquetas.train)
+result = ajusta_PLA_MOD(descriptores.train,etiquetas.train,max_iter = 50,vini = as.vector(reg.coef))
+pla.coef = result$coef
+print(pla.coef)
+```
+
+Mostramos los dos gráficos.
+```{r}
+plot(descriptores.train, col = etiquetas.train+2, xlab = "Intensidad Promedio", ylab = "Simetria")
+abline(-pla.coef[3]/pla.coef[2],-pla.coef[1]/pla.coef[2])
+```
+```{r}
+plot(descriptores.test, col = etiquetas.test+2, xlab = "Intensidad Promedio", ylab = "Simetria")
+abline(-pla.coef[3]/pla.coef[2],-pla.coef[1]/pla.coef[2])
+```
+
+Calculamos el error de entrenamiento y el de test.
+```{r}
+err.in = mean(abs(etiquetas.train-sign(pla.coef[1]*descriptores.train[,1]+pla.coef[2]*descriptores.train[,2]+pla.coef[3]))*0.5)
+err.test = mean(abs(etiquetas.test-sign(pla.coef[1]*descriptores.test[,1]+pla.coef[2]*descriptores.test[,2]+pla.coef[3]))*0.5)
+cat(paste0("Error en la muestra: ",err.in,"\nError de test: ",err.test))
+```
+
+Con estos valores, podemos obtener las siguientes cotas de error. La primera de las cotas que encontramos usando el error de entrenamiento es infinita, pues el error de generalización básico depende del número de funciones que consideremos, y el conjunto de todas las rectas es infinito.
+
+Para poder plantear una cota con el error dentro del muestra, tenemos que usar la dimensión de Vapnik-Chervonenkis. En el caso de las rectas en el plano, sabemos que dicha dimensión es 3. Por tanto, la cota de Vapnik-Chervonenkis queda así.
+```{r}
+err.in + sqrt(8/nrow(descriptores.train)*log((4*((2*nrow(descriptores.train))^(3)+1))/0.05))
+```
+
+La cota con respecto al error de test se debe a Hoeffding. Primero, calculamos $\epsilon$ tal que:
+
+$$
+2e^{-2\epsilon^2N} \leq 0.05
+$$
+
+Y obtenemos que el menor epsilon que cumple la condición es $\epsilon \approx 0.194$. Entonces, el máximo error fuera de la muestra esperado es el error de test más $\epsilon$. Obtenemos un valor entonrno a 0.25. Este valor es menor que los asociados al error dentro de la muestra, lo cual pone de manifiesto la utilidad de utilizar muestras de test para aproximar el error fuera de la muestra.
+
+## Apartado 2: Sobreajuste
+
+Para este apartado, usamos principalmente los polinomios de Legendre. Así que como primer paso, vamos a crear una función para poder usarlos con más comodidad.
+```{r}
+pol.Legendre = function(x,n){
+  if(n == 0)
+    return(1)
+  else if(n == 1)
+    return(x)
+  else
+    return(((2*n-1)/n)*x*pol.Legendre(x,n-1)+((n-1)/n)*pol.Legendre(x,n-2))
+}
+```
+**1.a)** Los cálculos para obtener $g_2$ y $g_10$ se encuentran en el siguiente apartado, en la función *experimento.ej2*.
+
+**1.b)** Es importante normalizar la función f para que $\sigma$ tenga el efecto querido, introducir ruido con igual influencia en todos los experimentos. Si no se realizara, los valores de la función f podrían ser muy grandes (y el ruido casi no tendría efecto) o muy pequeños (y sólo importaría el ruido).
+
+**2**
+En los siguientes apartados, vamos a realizar muchas veces este experimento, así que vamos a crear una función para su realización.
+```{r}
+f = function(a_q, x){
+  result = 0
+  for(i in 1:length(a_q)){
+    result = result + a_q[i]*pol.Legendre(x,i-1)
+  }
+  return(result)
+}
+
+experimento.ej2 = function(Qf,N,sigma){
+  
+  a_q = rnorm(Qf+1)
+  normalizacion = sqrt(sum(1/(2*(0:Qf)+1)))
+  a_q = a_q/normalizacion
+  
+  datatrain = simula_unif(N,1,c(-1,1))
+  datatrain.values = f(a_q,datatrain) + sigma*rnorm(nrow(datatrain))
+  
+  g2 = Regress_lin(cbind(1,datatrain,datatrain^2),datatrain.values)
+  g10 = Regress_lin(cbind(1,datatrain,datatrain^2,datatrain^3,
+                          datatrain^4,datatrain^5,datatrain^6,
+                          datatrain^7,datatrain^8,datatrain^9,
+                          datatrain^10),datatrain.values)
+  
+  dataout = simula_unif(N,1,c(-1,1))
+  dataout.values = f(a_q,dataout)
+
+  Eout.g2 = mean(abs(dataout.values - cbind(1,dataout,dataout^2)%*%g2))
+  Eout.g10 = mean(abs(dataout.values - cbind(1,dataout,dataout^2,dataout^3,
+                                        dataout^4,dataout^5,dataout^6,
+                                        dataout^7,dataout^8,dataout^9,
+                                        dataout^10)%*%g10))
+ 
+  return(list(g2 = g2, Eout.g2 = Eout.g2,g10 = g10, Eout.g10 = Eout.g10))
+}
+
+experimento.ej2(5,10,0.05)
+```
+
+Una vez tenemos esto, podemos realizar los experimentos del apartado 2. 
+```{r}
+err.H2 = 0
+err.H10 = 0
+
+for(i in 1:100){
+  exp = experimento.ej2(20,50,1)
+  err.H2 = err.H2 + exp$Eout.g2
+  err.H10 = err.H10 + exp$Eout.g10
+}
+cat(paste0("Error de H2: ",err.H2/100,"\nError de H10: ",err.H10/100))
+```
+
+De estos datos podemos ver que el modelo de polinomios de grado 10 no está sobreajustando.
+
+**2.a)** Podría ser una buena medida. Si nos diera un valor positivo, significaría que ajustar un polinomio de grado 10 nos da un mayor error que un polinomio de grado 2. Esto claramente nos indica que el modelo de grado 10 estaría sobreaprendiendo, y cometiendo grandes errores fuera de la muestra que se le proporciona.
+
+Si da un número negativo, podemos ver que el modelo mejora, pero puede que ya esté sobreaprendiendo. Por tanto, este tipo de medida parece correcto, pero debería ser más exhaustiva, es decir, que no se compare con respecto a los polinomios de grado 2, si no con respecto a todos los polinomios de grados inferiores a 10.
+
+## Apartado 3: Regularización y selección de modelos.
+
+**a) y b)**
+Vamos a repetir la estructura del apartado anterior.
+```{r}
+library(MASS) 
+RegLinWD = function(datos,label,lambda) {
+  mat.inv <- ginv(t(datos)%*%datos + lambda * diag(nrow = ncol(datos),ncol = ncol(datos)))
+  p.inversa <- mat.inv %*% t(datos)
+  return(p.inversa%*%label)
+}
+
+simula_gaus <- function(N,dim,sigma){
+  matrix(rnorm(N*dim,sd=sqrt(sigma)),ncol = dim,byrow = TRUE)
+}
+
+experimento.ej3 = function(N, d = 3, sigma = 0.5, lambda = 0.05){
+  wf =  rnorm(d+1)
+  
+  datatrain = simula_gaus(N,d,1)
+  datatrainextended = cbind(datatrain,1)
+  datatrain.values = apply(datatrainextended,1,
+                           function(x){wf%*%x + sigma*rnorm(1)})
+  
+  errores = sapply(1:N,FUN = function(x){
+                          w = RegLinWD(datatrainextended[-x,],datatrain.values[-x],lambda)
+                          return(abs(t(w)%*%datatrainextended[x,]-datatrain.values[x]))
+                        })
+
+  return(list(errores = errores, Ecv = mean(errores)))
+}
+
+experimento.ej3(10)
+```
+
+Con esto, realizamos un experimento en concreto. Para los ejercicios, se requiere lanzar un número grande de estos experimentos y sacar estadísticas de los mismos.
+
+Por comodidad, vamos a crear otra función, que para unos datos en concreto, nos devuelva todas las estadísticas necesarias.
+
+```{r}
+estadisticas.ej3 = function(N,num.repeticiones = 10^3, lambda = 0.05, verb = T){
+  e1 = vector(mode = "numeric", length = num.repeticiones)
+  e2 = vector(mode = "numeric", length = num.repeticiones)
+  Ecv = vector(mode = "numeric", length = num.repeticiones)
+  
+  for(i in 1:num.repeticiones){
+    exp = experimento.ej3(N, lambda = lambda)
+    e1[i] = exp$errores[1]
+    e2[i] = exp$errores[2]
+    Ecv[i] = exp$Ecv
+  }
+  if(verb){
+    cat("Estadísticas con ",N," datos.\n")
+    cat(paste0("e1:\n","\tmedia: ",mean(e1),"\n\tvarianza: ",var(e1),"\n"))
+    cat(paste0("e2:\n","\tmedia: ",mean(e2),"\n\tvarianza: ",var(e2),"\n"))
+    cat(paste0("Ecv:\n","\tmedia: ",mean(Ecv),"\n\tvarianza: ",var(Ecv),"\n"))
+    cat(paste0("Neff: ",var(e1)/var(Ecv),"\n\n"))
+  }
+  return(var(e1)/var(Ecv))
+}
+
+estadisticas.ej3(20)
+
+```
+Con esto, simplemente tenemos que hacer un bucle que nos genere todos los datos que necesitamos. Guardamos $N_eff$ para el apartado **f)**.
+
+```{r}
+Neff = vector(mode = "numeric", length = 11)
+for(i in 1:11){
+  Neff[i] = (estadisticas.ej3(3+5+10*i)/(3+5+10*i))*100
+}
+```
+
+Ahora pasamos a responder a las preguntas del apartado.
+
+**c)** Los valores promedio deben de ser similares. Esto se debe a que tanto la media de $e_1$ y de $e_2$ se obtienen de la misma distribución. Para un número de experimentos grande, la media de estos valores se parecerán. $E_cv$ no es más que la media de los $e_i$, luego su media también tenderá al mismo valor.
+
+**d)** A la varianza de $e_1$ contribuyen la generación aleatoria del punto, el error introducido a la hora de evaluar el valor que va a tomar el punto y la bondad del ajuste, donde participa con especial importancia la regularización.
+
+**e)** Si fueran realmente independientes, deberíamos obtener que la varianza de $E_cv$ es $\frac{1}{n}$ veces la de $e_i$. Esto se debe a que podríamos ver la varianza de $E_cv$ como la varianza de todos los datos generados de todas las iteraciones. Después separamos el cálculo de la varianza por cada $e_i$ y obtendríamos el resultado.
+
+**f)** Es un buen estimador pues, en realidad, los datos no son independientes. De serlo, el número de datos útil sería el cien por cien. Así pues, esta medida nos da una percepción de lo separados que se encuentran los datos entre ellos, es decir, la utilidad de cada dato generado.
+
+```{r}
+plot(seq(3+15,3+115,10),Neff)
+```
+
+Como podemos ver, el valor oscila entorno al 95 por ciento, que se acerca a lo que esperaríamos si los datos fueran independientes, que sería el cien por cien.
+
+**g)** Por lo que hemos visto en el apartado **e)**, si fueran independientes no supondría ninguna variación, nos daría un cien por cien. Así pues, podríamos esperar que al aumentar la regularización, bajarán los valores de la varianza, pero bajará el valor en ambos factores, tanto en la varianza de $e_1$ como en la de $E_cv$. Por tanto, espero que los valores no cambien mucho.
+
+```{r}
+Neff2 = vector(mode = "numeric", length = 11)
+for(i in 1:11){
+  Neff2[i] = (estadisticas.ej3(3+5+10*i,lambda = 2.5,verb = F)/(3+5+10*i))*100
+}
+cat(paste0("La diferencia media entre los Neff es: ",mean(Neff-Neff2)))
+```
+
+Podemos observar que los nuevo valores de Neff son ligeramente mayores a los anteriores. Parece que la varianza de $E_cv$ se ve más afectada por la normalización que la de $e_1$, de ahí la subida.
