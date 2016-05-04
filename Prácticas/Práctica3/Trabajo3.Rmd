@@ -1,0 +1,93 @@
+---
+title: "Trabajo 3"
+author: "Luis Suárez Lloréns"
+date: "4 de mayo de 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(5552368)
+```
+
+## Apartado 1
+
+Antes de empezar a responder a los diferentes puntos del apartado, debemos cargar los datos de la base de datos *Auto*. Estos se encuentran en la librería *ISLR* de R. Cargamos la librería con la siguiente orden.
+```{r Carga.ISLR}
+library(ISLR)
+```
+
+### a)
+
+Vamos a usar la función *pairs* para tener una visión general de los datos.
+```{r}
+pairs(Auto)
+```
+
+Nos fijamos en la fila de mpg, que es la característica que queremos clasificar. Viendo las gráficas de la fila de mpg, podemos ver que hay 3 que muestran cierta tendencia, que son *displacement*, *horsepower* y *weight*. Las demás muestran nubes de puntos demasiado amplias y difuminadas, que no pueden ser ajustadas.
+
+Vamos a usar la función *boxplot* para representar estas tres gráficas.
+
+**DISPLACEMENT**
+```{r}
+boxplot(mpg~cut(displacement, breaks = 10),data = Auto)
+```
+
+**HORSEPOWER**
+```{r}
+boxplot(mpg~cut(horsepower, breaks = 10),data = Auto)
+```
+
+**WEIGHT**
+```{r}
+boxplot(mpg~cut(weight, breaks = 10),data = Auto)
+```
+
+De las anteriores, el dato *displacement* sufre un repunte, en el intervalo (262,300]. Si nos fijamos realmente en los datos, esta sección tiene muy pocos datos, es normal que se pueda ver alterado. Salvo esto, las 3 muestran una tendencia clara. Si hubiera que elegir entre una de las tres, probablemente cogería *horsepower*, pues *weight* tiene muchos outliners y *displacement* tiene ese comportamiento un poco extraño comentado antes.
+
+### b)
+
+Por lo dicho anteriormente, seleccionaremos como posibles variables predictoras *displacement*, *horsepower* y *weight*, pues las nubes de puntos parecen reflejar una tendencia clara.
+
+### c)
+
+Para separar los datos en entrenamiento y test, vamos a usar un muestreo sin remplazamiento. En nuestro caso, como tenemos muchos datos, el comportamiento de este muestreo aleatorio debería cubrir bien todos los casos. En el caso de que no se tuvieran buenos resultados, sería necesario hacer este muestreo de manera estratificada.
+
+```{r}
+idx.train = sample(nrow(Auto),size = nrow(Auto)*0.8)
+Auto.train = Auto[idx.train,c("mpg","displacement","horsepower","weight")]
+Auto.test = Auto[-idx.train,c("mpg","displacement","horsepower","weight")]
+```
+
+### d)
+
+Vamos a crear la variable mpg01. Tenemos que definirla como un factor, usando la función *as.factor*. Para poder hacer el aprendizaje de modo correcto, la mediana la realizaremos sólo con los datos de entrenamiento, y dicha mediana la usaremos para ambos conjuntos.
+
+```{r}
+Auto.train = data.frame(mpg01=sign(Auto.train$mpg>=median(Auto.train$mpg))*2-1, Auto.train)
+Auto.test = data.frame(mpg01=sign(Auto.test$mpg>=median(Auto.train$mpg))*2-1, Auto.test)
+```
+
+Una vez tenemos los datos formateados de la manera desada, procedemos a aplicar los distintos modelos que se nos piden.
+
+#### Regresión logística
+
+Para realizar la regresión logística, utilizamos la función *glm*.
+
+```{r}
+modelo.RegLog = glm(mpg01 ~ displacement + horsepower + weight, data = Auto.train, start=c(log(mean(Auto.train$mpg)),0,0,0))
+```
+
+Con el modelo ya aprendido, realizamos la predicción del test.
+
+```{r}
+prediccion = predict.glm(modelo.RegLog,newdata = Auto.test)
+```
+
+Ahora, definimos como error cuando el clasificador nos daría la clase incorrecta. Esto se produce cuando el signo de la predicción y el de *mpg01* son distintos.
+
+```{r}
+sum((sign(-prediccion*Auto.test$mpg01)+1)/2)/nrow(Auto.test) * 100
+```
+
+Obtenemos un error bastante bajo, del 6 por ciento.
