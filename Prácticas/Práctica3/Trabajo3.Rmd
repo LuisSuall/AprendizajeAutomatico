@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 set.seed(5552368)
+library(ROCR)
 ```
 
 ## Apartado 1
@@ -61,7 +62,7 @@ Auto.test = Auto[-idx.train,c("mpg","displacement","horsepower","weight")]
 
 ### d)
 
-Vamos a crear la variable mpg01. Tenemos que definirla como un factor, usando la función *as.factor*. Para poder hacer el aprendizaje de modo correcto, la mediana la realizaremos sólo con los datos de entrenamiento, y dicha mediana la usaremos para ambos conjuntos.
+Vamos a crear la variable mpg01. Para poder hacer el aprendizaje de modo correcto, la mediana la realizaremos sólo con los datos de entrenamiento, y dicha mediana la usaremos para ambos conjuntos.
 
 ```{r}
 Auto.train = data.frame(mpg01=sign(Auto.train$mpg>=median(Auto.train$mpg))*2-1, Auto.train)
@@ -81,13 +82,48 @@ modelo.RegLog = glm(mpg01 ~ displacement + horsepower + weight, data = Auto.trai
 Con el modelo ya aprendido, realizamos la predicción del test.
 
 ```{r}
-prediccion = predict.glm(modelo.RegLog,newdata = Auto.test)
+prediccion.glm = predict(modelo.RegLog,newdata = Auto.test)
+roc.pred = predict.glm(modelo.RegLog,newdata = Auto.test, measure = "tpr", x.measure = "fpr")
 ```
 
 Ahora, definimos como error cuando el clasificador nos daría la clase incorrecta. Esto se produce cuando el signo de la predicción y el de *mpg01* son distintos.
 
 ```{r}
-sum((sign(-prediccion*Auto.test$mpg01)+1)/2)/nrow(Auto.test) * 100
+sum((sign(-prediccion.glm*Auto.test$mpg01)+1)/2)/nrow(Auto.test) * 100
 ```
 
 Obtenemos un error bastante bajo, del 6 por ciento.
+
+#### K-NN
+
+Hacemos algo similar que lo realizado para la regresión logística, pero con la función *knn*.
+
+```{r}
+library(class)
+prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = 3)
+
+```
+
+A diferencia de la regresión, los resultados del clasificador K-NN son directamente las clases. Luego para saber si hemos fallado, sólo tenemos que mirar si los resultados son distintos.
+```{r}
+sum(prediccion.knn != Auto.test$mpg01)/nrow(Auto.test) * 100
+```
+
+El error que encontramos está entorno al 8 por ciento.
+
+#### Curvas ROC
+Para poder pintar las *curvas ROC*, tenemos que usar las ordenes del paquete *ROCR* *prediction* y *performance*.
+
+Primero, pintamos la curva de la regresión logística.
+```{r}
+pred <- prediction(prediccion.glm, Auto.test$mpg01)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr") 
+plot(perf, col=rainbow(10))
+```
+
+Después, pintamos la curva del clasificador K-NN
+```{r}
+pred <- prediction(as.double(prediccion.knn), Auto.test$mpg01)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr") 
+plot(perf, col=rainbow(10))
+```
