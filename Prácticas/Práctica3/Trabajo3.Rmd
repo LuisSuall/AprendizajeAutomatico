@@ -83,7 +83,6 @@ Con el modelo ya aprendido, realizamos la predicción del test.
 
 ```{r}
 prediccion.glm = predict(modelo.RegLog,newdata = Auto.test)
-roc.pred = predict.glm(modelo.RegLog,newdata = Auto.test, measure = "tpr", x.measure = "fpr")
 ```
 
 Ahora, definimos como error cuando el clasificador nos daría la clase incorrecta. Esto se produce cuando el signo de la predicción y el de *mpg01* son distintos.
@@ -111,6 +110,23 @@ sum(prediccion.knn != Auto.test$mpg01)/nrow(Auto.test) * 100
 
 El error que encontramos está entorno al 8 por ciento.
 
+Para intentar conocer el mejor parámetro de la variable *k*, vamos a realizar la prueba anterior cambiando los valores de k.
+
+```{r}
+for(k in 1:20){
+  prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = k)
+  error = sum(prediccion.knn != Auto.test$mpg01)/nrow(Auto.test) * 100
+  cat(paste0("K: ",k, " \tError: ",error,"\n"))
+}
+```
+
+Podemos ver, los valores que tienen menos error son 5 y 7. No tenemos más información, luego no podemos decidirnos entre los dos. Para poder realizar el siguiente apartado, vamos a guardar la predicción obtenida usando como *k* el valor 5.
+
+```{r}
+prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = 5)
+```
+
+
 #### Curvas ROC
 Para poder pintar las *curvas ROC*, tenemos que usar las ordenes del paquete *ROCR* *prediction* y *performance*.
 
@@ -127,3 +143,35 @@ pred <- prediction(as.double(prediccion.knn), Auto.test$mpg01)
 perf <- performance(pred, measure = "tpr", x.measure = "fpr") 
 plot(perf, col=rainbow(10))
 ```
+
+### e)
+
+Para poder estimar los dos modelos usando validación cruzada, tenemos que generar las 5 particiones. Para crear los *folds* o particiones que usaremos para la validación cruzada, podemos usar la función *createFolds* del paquete *caret*.
+```{r}
+library(caret)
+folds = createFolds(1:nrow(Auto), k = 5)
+
+error.log = vector("numeric",5)
+error.knn = vector("numeric",5)
+
+for(i in 1:5){
+  Auto.train = Auto[-folds[[i]],c("mpg","displacement","horsepower","weight")]
+  Auto.test = Auto[folds[[i]],c("mpg","displacement","horsepower","weight")]
+  
+  Auto.train = data.frame(mpg01=sign(Auto.train$mpg>=median(Auto.train$mpg))*2-1, Auto.train)
+  Auto.test = data.frame(mpg01=sign(Auto.test$mpg>=median(Auto.train$mpg))*2-1, Auto.test)
+  
+  #Regresion logistica
+  prediccion.glm = predict(modelo.RegLog,newdata = Auto.test)
+  error.log[i] = sum((sign(-prediccion.glm*Auto.test$mpg01)+1)/2)/nrow(Auto.test) * 100
+  #Clasificacion K-NN
+  prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = k)
+  error.knn[i] = sum(prediccion.knn != Auto.test$mpg01)/nrow(Auto.test) * 100
+}
+
+cat(paste0("Error medio cometido con regresión logística: ",mean(error.log)))
+cat(paste0("Error medio cometido con K-NN: ",mean(error.knn)))
+```
+
+
+Podemos por tanto, confirmar lo visto en el apartado anterior. La regresión logística parece comportarse mejor que K-NN.
