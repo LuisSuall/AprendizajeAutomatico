@@ -185,7 +185,7 @@ Para empezar, vamos a prepara las particiones de entrenamiento(80%) y de test(20
 
 ```{r}
 library(MASS)
-idx.train = sample(nrow(Auto),size = nrow(Auto)*0.8)
+idx.train = sample(nrow(Boston),size = nrow(Boston)*0.8)
 Boston.train = Boston[idx.train,]
 Boston.test = Boston[-idx.train,]
 ```
@@ -209,7 +209,7 @@ error = sum(abs(Boston.test["medv"]-pred))/nrow(Boston.test)
 cat(paste0("El error obtenido es: ",error))
 ```
 
-## Apartado 4
+### d)
 
 Vamos a ajustar un modelo de Boosting para poder comparar los resultados de los apartados anteriores.
 
@@ -220,4 +220,55 @@ pred = predict(boost,Boston.test,n.trees = 100)
 error = sum(abs(Boston.test["medv"]-pred))/nrow(Boston.test)
 cat(paste0("El error obtenido es: ",error))
 ```
+
+## Apartado 4
+
+### a)
+
+Primero, vamos a preparar los datos.
+
+```{r}
+idx.train = sample(nrow(OJ),size = 800)
+OJ.train = OJ[idx.train,]
+OJ.test = OJ[-idx.train,]
+```
+
+Vamos a entrenar el arbol de decisión.
+
+```{r}
+library(tree)
+arbol = tree(Purchase~WeekofPurchase+StoreID+PriceCH+PriceMM+DiscCH+DiscMM+SpecialCH+SpecialMM+LoyalCH+SalePriceMM+SalePriceCH+PriceDiff+Store7+PctDiscMM+PctDiscCH+ListPriceDiff+STORE, data = OJ.train)
+```
+
+Con esto, ya habríamos ajustado nuestro árbol con los datos de entrenamiento.
+
+### b)
+
+Vamos a ver los resultados de la orden *summary*.
+
+```{r}
+summary(arbol)
+```
+
+### c)
+
+```{r}
+plot(arbol, uniform=TRUE, 
+  	main="Árbol de clasificación")
+text(arbol, use.n=TRUE, all=TRUE, cex=.8)
+```
+
+### d)
+
+```{r}
+
+```
+
+
+### e)
+
+```{r}
+cv.tree(arbol)
+```
+
 
