@@ -175,3 +175,49 @@ cat(paste0("Error medio cometido con K-NN: ",mean(error.knn)))
 
 
 Podemos por tanto, confirmar lo visto en el apartado anterior. La regresión logística parece comportarse mejor que K-NN.
+
+## Apartado 2
+
+## Apartado 3
+
+### a)
+Para empezar, vamos a prepara las particiones de entrenamiento(80%) y de test(20%)
+
+```{r}
+library(MASS)
+idx.train = sample(nrow(Auto),size = nrow(Auto)*0.8)
+Boston.train = Boston[idx.train,]
+Boston.test = Boston[-idx.train,]
+```
+
+Con los datos ya preparamos, vamos a realizar los ejercicios.
+
+### b)
+¿Qué es bagging?
+
+### c)
+
+
+```{r}
+#Por lo que he leido, Rand.forest es un caso particular de
+#Bagging, como no encuentro un método que lo haga, voy a 
+#hacer rand.Forest, y luego si no, lo uso para b)
+library(randomForest)
+a.forest = randomForest(medv~crim+zn+indus+chas+nox+rm+age+dis+rad+tax+ptratio+black+lstat, data = Boston.train)
+pred = predict(a.forest,Boston.test)
+error = sum(abs(Boston.test["medv"]-pred))/nrow(Boston.test)
+cat(paste0("El error obtenido es: ",error))
+```
+
+## Apartado 4
+
+Vamos a ajustar un modelo de Boosting para poder comparar los resultados de los apartados anteriores.
+
+```{r}
+library(gbm)
+boost = gbm(medv~crim+zn+indus+chas+nox+rm+age+dis+rad+tax+ptratio+black+lstat, data = Boston.train, distribution = "gaussian")
+pred = predict(boost,Boston.test,n.trees = 100)
+error = sum(abs(Boston.test["medv"]-pred))/nrow(Boston.test)
+cat(paste0("El error obtenido es: ",error))
+```
+
