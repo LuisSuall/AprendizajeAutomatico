@@ -124,6 +124,23 @@ donde $\mathbf{c}$ y $\mathbf{b}$ son vectores y A es una matriz.
 \end{enumerate}
 \end{cuestion}
 \begin{respuesta}
+\textbf{a)} Dado que los datos son linealmente separables, existe un $w$ que separe perfectamente los datos. Eso significa que el signo de $w^Tx_n$ es igual al signo de $y_n$ para todo $n$. Entonces, si $y_n>0$, $w^Tx_n$ también lo será, luego el producto será positivo. Si $y_n<0$, $w^Tx_n$ sería negativo, y el producto saldría también positivo. Luego tenemos que:
+\[
+\ y_nw^Tx_n > 0
+\]
+\textbf{b)} Para transformar el problema del apartado a, en el problema que tenemos de programación lineal, tenemos que llevar la condición del apartado a, es decir, $y_nw^Tx_n > 0$ a la condición $Az \leq b$.\\
+
+El primer paso es tener el signo de comparación correcto, esto lo conseguimos multiplicando por $-1$ la primera desigualdad, obteniendo $-y_nw^Tx_n \leq 0$.\\
+
+Tras esto, tenemos que $-y_nw^Tx_n \leq 0$ es cierto para cada dato. Luego tenemos que transformar las condiciones que obtenemos ---una por cada dato--- a una expresión matricial de la forma $Az \leq b$. Es claro que $z$ será nuestro vector de pesos $w$ y que $b$ debe de ser el vector 0.\\
+
+Nos queda por tanto la definición de A. Para cada dato de tamaño $N$, la operación que realizamos en la búsqueda del hiperplano separador es:
+\[
+\ -yw^Tx = \sum_{i=1}^{N}-yw_ix_i = \sum_{i=1}^{N}(-yx_i)w_i
+\]
+Luego son esos valores $(-yx_i)$ los que tenemos que almacenar en nuestra matriz $A$ para poder realizar la operación. Por tanto, la matriz A será una matriz de N columnas por d ---número de datos--- filas, donde cada fila se define como $(-yx_i)$ para un dato distinto del conjunto.\\
+ 
+Por último, notar que no hemos dicho nada de c. En realidad, la expresión $Az \leq b$ anterior ya contiene todas las restricciones del problema. Luego podríamos usar como $c$ el vector 0, para no imponer ninguna restricción adicional.
 \end{respuesta}
 
 %5
