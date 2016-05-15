@@ -82,6 +82,34 @@ Si $H^2 = H$, entonces por inducción, tendríamos que $H^K=H$. Por tanto, sólo
 Resolver el siguiente problema: Encontrar el punto $(x_0,y_0)$ sobre la línea $ax+by+d=0$ que esté más cerca del punto $(x_1,y_1)$.
 \end{cuestion}
 \begin{respuesta}
+Vamos a resolver este problema, utilizando multiplicadores de Lagrange. Los multiplicadores de Lagrange tratan de buscar el máximo de una función. En nuestro caso, buscamos el mínimo de una función, que es lo mismo que buscar el máximo de menos dicha función. Además, no necesitamos la raiz a la hora de calcular la distancia, pues el punto que obtengamos va a ser el mismo. Así pues, obtenemos:
+\[
+\ \mathcal{L}(x,y,\lambda) = -\left((x_1-x)^2(y_1-y)^2\right)-\lambda(ax+by+c)
+\]
+\[
+\ \nabla \mathcal{L}(x,y,\lambda) = < 2(x_1-x)-a\lambda,2(y_1-y)-a\lambda, ax+by+c>
+\]
+
+Ahora, igualamos $\nabla \mathcal{L}(x,y,\lambda)$ a 0 y resolvemos el sistema de ecuaciones:
+\[
+\ \begin{cases} 2(x_1-x)-a\lambda=0 \\ 2(y_1-y)-a\lambda=0 \\ ax+by+c =0 \end{cases}
+\]
+
+De las dos primeras, podemos obtener expresiones de $x$ e $y$ en función de $\lambda$:
+\[
+\ 2x_1-a\lambda = 2x \Rightarrow x_1-\frac{a\lambda}{2} = x
+\]
+\[
+\ 2y_1-b\lambda = 2y \Rightarrow y_1-\frac{b\lambda}{2} = y
+\]
+
+Por último, para calcular $\lambda$, sustituimos en la última ecuación del sistema y resolvemos:
+\[
+\ ax+by+c =0\Rightarrow a\left(x_1-\frac{a\lambda}{2}\right)+b\left(y_1-\frac{b\lambda}{2}\right)+c = 0
+\]
+\[
+\ \Rightarrow ax_1+by_1+c = \left(\frac{a^2}{2}+\frac{b^2}{2}\right)\lambda \Rightarrow \lambda = \frac{ax_1+by_1+c }{\left(\frac{a^2}{2}+\frac{b^2}{2}\right)}
+\]
 \end{respuesta}
 
 %4
@@ -100,9 +128,26 @@ donde $\mathbf{c}$ y $\mathbf{b}$ son vectores y A es una matriz.
 
 %5
 \begin{cuestion}
-Probar que en el caso general de funciones con ruido se verifica que $\mathbb{E}_{\mathcal{D}}[E_{out}]=\sigma^2+bias+var$ (ver transparencias de clase).
+Probar que en el caso general de funciones con ruido se verifica que $\mathbb{E}_{\mathcal{D}}[E_{out}]=\sigma^2+\textrm{bias}+\textrm{var}$ (ver transparencias de clase).
 \end{cuestion}
 \begin{respuesta}
+La función que vamos a aproximar, ahora tiene ruido. Es decir, tenemos una función $F(x) = f(x) +\epsilon$ con $\epsilon$ un ruido de una normal de media 0 y desviación típica $\sigma$.\\
+
+Repetimos los pasos de la transparencia, pero utilizando la función $F(x)$ y llegamos a:\\
+\[
+\ E_D[E_out(g^{(D)})] = E_x[E_D(g^{D}(x)^2)- \tilde{g}(x)^2 + \tilde{g}(x)^2-2\tilde{g}(x)F(x)+F(x)^2 =
+\]
+\[
+\ E_x[\textrm{var}(X)+ \tilde{g}(x)^2-2\tilde{g}(x)f(x)+f(x)^2-2\tilde{g}(x)\epsilon+2f(x)\epsilon+\epsilon^2] = 
+\]
+\[
+\ E_x[\textrm{var}(X)+\textrm{bias}(x)+2(f(x)-\tilde{g}(x))\epsilon+\epsilon^2]
+\]
+
+Pero la esperanza de $\epsilon$ es 0, pues es la media de su distribución. La esperanza de $\epsilon^2$ es la varianza de su distribución. Luego nos queda:
+\[
+\ E_D[E_{out}(g^{(D)})] = \textrm{bias}+\textrm{var}+\sigma^2
+\]
 \end{respuesta}
 
 %6
@@ -110,6 +155,18 @@ Probar que en el caso general de funciones con ruido se verifica que $\mathbb{E}
 Consideremos las mismas condiciones generales del enunciado del Ejercicio 2 del apartado de Regresión de la relación de ejercicios 2. Considerar ahora $\sigma=0.1$ y $d=8$, ¿cuál es el más pequeño tamaño muestral que resultará en un valor esperado de $E_{in}$ mayor de 0.008?
 \end{cuestion}
 \begin{respuesta}
+
+Partimos de la ecuación del ejercicio 2, y asignamos los valores que nos dice el ejercicio:\\
+\[
+\ E_D[E_{in}(w_{lin})] = \sigma^2\left(1-\frac{d+1}{N}\right) = 0.01*\left(1-\frac{9}{N}\right)
+\]
+
+Ahora igualamos con $0.008$ y calculamos $N$:\\
+\[
+\ 0.01*\left(1-\frac{9}{N}\right) = 0.008\Rightarrow-\frac{9}{N} = \frac{0.008}{0.01}-1 = -0.2 \Rightarrow \frac{9}{0.2} = 45 = N
+\]
+
+Entonces, con $N=45$, obtenemos justo un valor esperado de $E_{in}$ de $0.008$. Luego para obtener un valor esperado mayor de $0.008$, necesitamos $45<N$. El mínimo valor que cumple esto es $N=46$.
 \end{respuesta}
 
 %7
@@ -216,6 +273,11 @@ En cuanto al estudio de los regularizadores de Tikhonov, es claro que el único 
 Considerar la matriz hat $H=X(X^TX)^{-1}X^T$. Sea $X$ una matriz $N \times (d+1)$, y $X^TX$ invertible. Mostrar que traza($H$)=$d+1$, donde traza significa la suma de los elementos de la diagonal principal.
 \end{bonus}
 \begin{respuesta}
+Vamos a utilizar la propiedad de que la traza de $AB$ es igual a la traza de $BA$. Usando dicha propiedad, calculamos la traza de $H$. Destacar que la matriz $H$ es cuadrada y de dimensión $d+1$ $(d+1=N)$.
+\[
+\ \textrm{traza}(H) = \textrm{traza}(X(X^TX)^{-1}X^T) = \textrm{traza}(X^TX(X^TX)^{-1}) = \textrm{traza}(I) = d+1
+\]
+Siendo I la matriz identidad de tamaño $d+1$.
 \end{respuesta}
 
 
