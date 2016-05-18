@@ -120,10 +120,19 @@ for(k in 1:20){
 }
 ```
 
-Podemos ver, los valores que tienen menos error son 5 y 7. No tenemos más información, luego no podemos decidirnos entre los dos. Para poder realizar el siguiente apartado, vamos a guardar la predicción obtenida usando como *k* el valor 5.
+Podemos ver, los valores que tienen menos error son 5 y 7. No tenemos más información, luego no podemos decidirnos entre los dos. 
+
+R tiene una funcionalidad que, automáticamente nos devuelve el mejor parámetro *k*. Es la función *tune.knn()* de la librería *e1071*.
+```{r}
+#library(e1071)
+#tune.values = tune.knn(x = Auto.train[,c("displacement","horsepower","weight")], y = Auto.train[,"mpg01"],k = 1:20)
+#summary(tune.values)
+```
+
+Para poder realizar el ejercicio sobre la curva ROC, guardamos la predicción del K-NN, pero obteniendo la probabilidad de pertenencia a la clase, y no sólo la clase.
 
 ```{r}
-prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = 5)
+prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = 5, prob = TRUE)
 ```
 
 
@@ -178,6 +187,12 @@ Podemos por tanto, confirmar lo visto en el apartado anterior. La regresión logí
 
 ## Apartado 2
 
+Vamos a usar un ajuste de tipo LASSO.
+```{r}
+#prediccion.lasso <- lars(x, y, type="lasso")
+#summary(prediccion.lasso)
+```
+
 ## Apartado 3
 
 ### a)
@@ -193,18 +208,23 @@ Boston.test = Boston[-idx.train,]
 Con los datos ya preparamos, vamos a realizar los ejercicios.
 
 ### b)
-¿Qué es bagging?
+Bagging es un *random forest* donde podemos coger cualquier atributo para la generación de arboles.
+
+```{r}
+library(randomForest)
+random.forest = randomForest(medv~crim+zn+indus+chas+nox+rm+age+dis+rad+tax+ptratio+black+lstat, data = Boston.train, mtry = 13)
+pred = predict(random.forest,Boston.test)
+error = sum(abs(Boston.test["medv"]-pred))/nrow(Boston.test)
+cat(paste0("El error obtenido es: ",error))
+```
+
 
 ### c)
 
 
 ```{r}
-#Por lo que he leido, Rand.forest es un caso particular de
-#Bagging, como no encuentro un método que lo haga, voy a 
-#hacer rand.Forest, y luego si no, lo uso para b)
-library(randomForest)
-a.forest = randomForest(medv~crim+zn+indus+chas+nox+rm+age+dis+rad+tax+ptratio+black+lstat, data = Boston.train)
-pred = predict(a.forest,Boston.test)
+random.forest = randomForest(medv~crim+zn+indus+chas+nox+rm+age+dis+rad+tax+ptratio+black+lstat, data = Boston.train)
+pred = predict(random.forest,Boston.test)
 error = sum(abs(Boston.test["medv"]-pred))/nrow(Boston.test)
 cat(paste0("El error obtenido es: ",error))
 ```
@@ -261,14 +281,15 @@ text(arbol, use.n=TRUE, all=TRUE, cex=.8)
 ### d)
 
 ```{r}
-
+probabilidad.prediccion = predict(arbol,OJ.test)
+OJ.prediction= vector(length = nrow(probabilidad.prediccion))
+OJ.prediction[probabilidad.prediccion[,1]>0.5] = "CH"
+OJ.prediction[probabilidad.prediccion[,1]<=0.5] = "MM"
+confusionMatrix(OJ.prediction,OJ.test$Purchase)
 ```
-
 
 ### e)
 
 ```{r}
 cv.tree(arbol)
 ```
-
-
