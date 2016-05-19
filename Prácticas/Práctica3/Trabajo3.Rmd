@@ -124,15 +124,19 @@ Podemos ver, los valores que tienen menos error son 5 y 7. No tenemos más inform
 
 R tiene una funcionalidad que, automáticamente nos devuelve el mejor parámetro *k*. Es la función *tune.knn()* de la librería *e1071*.
 ```{r}
-#library(e1071)
-#tune.values = tune.knn(x = Auto.train[,c("displacement","horsepower","weight")], y = Auto.train[,"mpg01"],k = 1:20)
-#summary(tune.values)
+library(e1071)
+tune.values = tune.knn(x = Auto.train[,c("displacement","horsepower","weight")], y = as.factor(Auto.train[,"mpg01"]),k = 1:20,tunecontrol = tune.control(sampling = "cross"), cross = 10)
+summary(tune.values)
 ```
 
 Para poder realizar el ejercicio sobre la curva ROC, guardamos la predicción del K-NN, pero obteniendo la probabilidad de pertenencia a la clase, y no sólo la clase.
 
 ```{r}
 prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = 5, prob = TRUE)
+
+prob <- attr(prediccion.knn, "prob")
+prob <- 2*ifelse(prediccion.knn == "-1", 1-prob, prob) - 1
+prob
 ```
 
 
@@ -148,7 +152,7 @@ plot(perf, col=rainbow(10))
 
 Después, pintamos la curva del clasificador K-NN
 ```{r}
-pred <- prediction(as.double(prediccion.knn), Auto.test$mpg01)
+pred <- prediction(prob, Auto.test$mpg01)
 perf <- performance(pred, measure = "tpr", x.measure = "fpr") 
 plot(perf, col=rainbow(10))
 ```
@@ -174,7 +178,7 @@ for(i in 1:5){
   prediccion.glm = predict(modelo.RegLog,newdata = Auto.test)
   error.log[i] = sum((sign(-prediccion.glm*Auto.test$mpg01)+1)/2)/nrow(Auto.test) * 100
   #Clasificacion K-NN
-  prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = k)
+  prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = 5)
   error.knn[i] = sum(prediccion.knn != Auto.test$mpg01)/nrow(Auto.test) * 100
 }
 
@@ -187,10 +191,33 @@ Podemos por tanto, confirmar lo visto en el apartado anterior. La regresión logí
 
 ## Apartado 2
 
+```{r}
+library(MASS)
+idx.train = sample(nrow(Boston),size = nrow(Boston)*0.8)
+Boston.train = Boston[idx.train,]
+Boston.test = Boston[-idx.train,]
+```
+
 Vamos a usar un ajuste de tipo LASSO.
 ```{r}
+library(glmnet)
+prediccion.lasso <- glmnet(x = as.matrix(Boston.train[,-1]), y = Boston.train[,1])
 #prediccion.lasso <- lars(x, y, type="lasso")
-#summary(prediccion.lasso)
+plot(prediccion.lasso)
+```
+
+```{r}
+cv = cv.glmnet(x = as.matrix(Boston.train[,-1]), y = Boston.train[,1], alpha = 1)
+bestlam = cv$lambda.min
+plot(cv)
+cv
+bestlam
+```
+
+```{r}
+lasso.coef = predict(prediccion.lasso,type="coefficients", s = cv$lambda.min)[1:14,]
+lasso.coef
+abs(lasso.coef)>0.5
 ```
 
 ## Apartado 3
