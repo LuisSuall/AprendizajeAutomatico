@@ -83,6 +83,7 @@ Con el modelo ya aprendido, realizamos la predicción del test.
 
 ```{r}
 prediccion.glm = predict(modelo.RegLog,newdata = Auto.test)
+prediccion.glm
 ```
 
 Ahora, definimos como error cuando el clasificador nos daría la clase incorrecta. Esto se produce cuando el signo de la predicción y el de *mpg01* son distintos.
@@ -223,7 +224,7 @@ abs(lasso.coef)>0.5
 ## Apartado 3
 
 ### a)
-Para empezar, vamos a prepara las particiones de entrenamiento(80%) y de test(20%)
+Para empezar, vamos a prepara las particiones de entrenamiento(80%) y de test(20%), como ya hemos realizado en otros apartados.
 
 ```{r}
 library(MASS)
@@ -235,7 +236,7 @@ Boston.test = Boston[-idx.train,]
 Con los datos ya preparamos, vamos a realizar los ejercicios.
 
 ### b)
-Bagging es un *random forest* donde podemos coger cualquier atributo para la generación de arboles.
+Bagging es un *random forest* donde podemos coger cualquier atributo para la generación de arboles. Por tanto, seleccionamos el parámetro *mtry* que indica el número de atributos a considerar para generar un árbol como el número total de atributos, $13$.
 
 ```{r}
 library(randomForest)
@@ -245,9 +246,11 @@ error = sum(abs(Boston.test["medv"]-pred))/nrow(Boston.test)
 cat(paste0("El error obtenido es: ",error))
 ```
 
+Obtenemos un error bastante bajo, entorno al 2%.
 
 ### c)
 
+Para un *random forest* general, eliminamos el parámetro *mtry* usado en el apartado anterior. Entonces automáticamente, la función tomará un número menor de atributos que el máximo, teniendo en cuenta el número total de atributos. En resumen, eligiremos entre menos atributos que el total, realizando por tanto un *random forest*.
 
 ```{r}
 random.forest = randomForest(medv~crim+zn+indus+chas+nox+rm+age+dis+rad+tax+ptratio+black+lstat, data = Boston.train)
@@ -255,6 +258,8 @@ pred = predict(random.forest,Boston.test)
 error = sum(abs(Boston.test["medv"]-pred))/nrow(Boston.test)
 cat(paste0("El error obtenido es: ",error))
 ```
+
+El error obtenido es ligeramente inferior al bagging, pero casi no se puede apreciar.
 
 ### d)
 
@@ -268,11 +273,12 @@ error = sum(abs(Boston.test["medv"]-pred))/nrow(Boston.test)
 cat(paste0("El error obtenido es: ",error))
 ```
 
+Este error es entorno al 6%. Es decir, que ambos modelos, tanto *bagging* como *random forest* son muy buenas estimaciones, sacando gran ventaja al modelo de *Boosting*. Podemos ver entonces el potencial de generar la decisión tomando multiples opiniones (multiples árboles) obtiene muy buenos resultados, ligeramente mejores para *random forest*.
 ## Apartado 4
 
 ### a)
 
-Primero, vamos a preparar los datos.
+Primero, vamos a preparar los datos. Vamos a utilizar el mismo mecanismo que en los demás apartados.
 
 ```{r}
 idx.train = sample(nrow(OJ),size = 800)
@@ -297,6 +303,10 @@ Vamos a ver los resultados de la orden *summary*.
 summary(arbol)
 ```
 
+Obtenemos una lista de características del árbol que hemos generado. Destacar primero que pese al gran número de variables, sólo usamos 5 para el árbol final. Esto podría ser sorprendente, pues dado la gran cantidad de variables que podría seleccionar, selecciona un grupo muy pequeño. Debido el funcionamiento de los árboles, si usaramos todas las variables, el árbol sería mucho más preciso, pudiendo fácilmente legar el error a 0. Lo que sucede es que se somete al árbol a un proceso de regularización para mejorar la generalización, que nos reduce el árbol hasta lo que obtenemos.
+
+Destacar también el error que nos da, que es entorno a $0.15$. 
+
 ### c)
 
 ```{r}
@@ -305,7 +315,11 @@ plot(arbol, uniform=TRUE,
 text(arbol, use.n=TRUE, all=TRUE, cex=.8)
 ```
 
+Podemos ver que el árbol cumple los datos que obteníamos del *summary*. Las primeras elecciones, como sabemos por el funcionamiento de la generación de los árboles, son las que aportan más separación a los datos. Entonces, podemos usar esta representación del árbol para conocer los valores más importantes para clasificar la muestra. En este caso, el factor que claramente es más importante es el *LoyalCH*.
+
 ### d)
+
+Para poder calcular la matriz de confusión, debemos tomar una decisión sobre el valor donde pasamos de clasificar un punto como *CH* para clasificarlo como *MM*. Por defecto, vamos a tomar la decisión de asignar a los valores superiores de $0.5$ a *CH* y los valores menores o iguales a la clase *MM*
 
 ```{r}
 probabilidad.prediccion = predict(arbol,OJ.test)
@@ -314,6 +328,18 @@ OJ.prediction[probabilidad.prediccion[,1]>0.5] = "CH"
 OJ.prediction[probabilidad.prediccion[,1]<=0.5] = "MM"
 confusionMatrix(OJ.prediction,OJ.test$Purchase)
 ```
+
+Obtenemos un error de $0.76$. Destacar que la mayor parte del error se produce al intentar clasificar muestras de MM, pues obtenemos muchos falsos *CH*. Por tanto si fueramos más restriccivos con la clasificación de *CH* (subiendo el valor 0.5) deberíamos obtener mejores resultados.
+
+```{r}
+probabilidad.prediccion = predict(arbol,OJ.test)
+OJ.prediction= vector(length = nrow(probabilidad.prediccion))
+OJ.prediction[probabilidad.prediccion[,1]>0.6] = "CH"
+OJ.prediction[probabilidad.prediccion[,1]<=0.6] = "MM"
+confusionMatrix(OJ.prediction,OJ.test$Purchase)
+```
+
+Efectivamente, a costa de empeorar la sensitividad, mejoramos el error general y sobretodo la espificidad. 
 
 ### e)
 
