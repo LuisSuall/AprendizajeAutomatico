@@ -274,6 +274,7 @@ cat(paste0("El error obtenido es: ",error))
 ```
 
 Este error es entorno al 6%. Es decir, que ambos modelos, tanto *bagging* como *random forest* son muy buenas estimaciones, sacando gran ventaja al modelo de *Boosting*. Podemos ver entonces el potencial de generar la decisión tomando multiples opiniones (multiples árboles) obtiene muy buenos resultados, ligeramente mejores para *random forest*.
+
 ## Apartado 4
 
 ### a)
@@ -286,9 +287,9 @@ OJ.train = OJ[idx.train,]
 OJ.test = OJ[-idx.train,]
 ```
 
-Vamos a entrenar el arbol de decisión.
+Vamos a entrenar el árbol de decisión.
 
-```{r}
+```{r warning=FALSE}
 library(tree)
 arbol = tree(Purchase~WeekofPurchase+StoreID+PriceCH+PriceMM+DiscCH+DiscMM+SpecialCH+SpecialMM+LoyalCH+SalePriceMM+SalePriceCH+PriceDiff+Store7+PctDiscMM+PctDiscCH+ListPriceDiff+STORE, data = OJ.train)
 ```
@@ -341,8 +342,13 @@ confusionMatrix(OJ.prediction,OJ.test$Purchase)
 
 Efectivamente, a costa de empeorar la sensitividad, mejoramos el error general y sobretodo la espificidad. 
 
-### e)
+### e) y bonus
+
+Vamos a realizar un experimento con validación cruzada, utilizando la función *cv.tree()*
 
 ```{r}
-cv.tree(arbol)
+tr0.cv = cv.tree(arbol)
+plot.tree.sequence(tr0.cv)
 ```
+
+Como podemos ver, el tamaño del árbol óptimo está entorno a 5. Esto nos indica que el árbol que hemos generado durante el ejercicio tiene demasiados nodos.
