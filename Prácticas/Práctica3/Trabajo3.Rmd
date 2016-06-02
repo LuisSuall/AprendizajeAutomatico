@@ -2,7 +2,7 @@
 title: "Trabajo 3"
 author: "Luis Suárez Lloréns"
 date: "4 de junio de 2016"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -201,7 +201,7 @@ for(i in 1:5){
   prediccion.glm = predict(modelo.RegLog,newdata = Auto.test)
   error.log[i] = sum((sign(-prediccion.glm*Auto.test$mpg01)+1)/2)/nrow(Auto.test) * 100
   #Clasificacion K-NN
-  prediccion.knn = knn(Auto.train.knn[,c("displacement","horsepower","weight")],Auto.test.knn[,c("displacement","horsepower","weight")], Auto.train.knn[,"mpg01"],k = 5)
+  prediccion.knn = knn(Auto.train.knn[,c("displacement","horsepower","weight")],Auto.test.knn[,c("displacement","horsepower","weight")], Auto.train.knn[,"mpg01"],k = 8)
   error.knn[i] = sum(prediccion.knn != Auto.test.knn$mpg01)/nrow(Auto.test.knn) * 100
 }
 
@@ -258,7 +258,7 @@ error = mean((prediction - Boston.test[,1])^2)
 cat(paste0("Error cometido: ",error))
 ```
 
-El error que obtenemos es bastante bueno, por tanto, en un principio no hay problema de *underfitting*.
+El error que obtenemos aceptable, pero se podría mejorar. En un principio podríamos pensar que hay un poco de *underfitting*.
 
 ### c)
 
@@ -301,6 +301,44 @@ prediction = predict(model.svm, newdata = Boston.test.01)
 ```
 
 Como podemos ver, el kernel radial obtiene los mejores resultados de error en test.
+
+### Bonus
+
+Vamos a utilizar el mismo método de realizar la validación cruzada que en el primer bonus.
+```{r warning=FALSE}
+folds = createFolds(1:nrow(Boston), k = 5)
+
+error.in = vector("numeric",5)
+error.test = vector("numeric",5)
+
+for(i in 1:5){
+  #Generar particion
+  Boston.train = Boston[-folds[[i]],]
+  Boston.test = Boston[folds[[i]],]
+  
+  crim01 = sign(Boston[,1] >= median(Boston[,1]))*2-1
+  new.crim = crim01[-folds[[i]]]
+  Boston.train.01 = data.frame(Boston.train, new.crim)
+  new.crim = crim01[folds[[i]]]
+  Boston.test.01  = data.frame(Boston.test, new.crim)
+  
+  #Calcular el modelo
+  model.svm = svm(new.crim ~ chas+nox+rm+dis+rad, data = Boston.train.01,kernel = "radial")
+  
+  #Error de test
+  prediction = predict(model.svm, newdata = Boston.test.01)
+  error.test[1] = (sum((sign(-prediction*Boston.test.01$new.crim)+1)/2)/nrow(Boston.test.01)) *100
+  
+  #Error de train
+  prediction = predict(model.svm, newdata = Boston.train.01)
+  error.test[1] = (sum((sign(-prediction*Boston.train.01$new.crim)+1)/2)/nrow(Boston.train.01)) *100
+}
+
+cat(paste0("Error medio en train: ",mean(error.in)))
+cat(paste0("Error medio en test: ",mean(error.test)))
+```
+
+Podemos ver que acierta exactamente en el error en la muestra, y que consigue muy buenos resultados en el test.
 
 ## Apartado 3
 
@@ -387,7 +425,7 @@ summary(arbol)
 
 Obtenemos una lista de características del árbol que hemos generado. Destacar primero que pese al gran número de variables, sólo usamos 5 para el árbol final. Esto podría ser sorprendente, pues dado la gran cantidad de variables que podría seleccionar, selecciona un grupo muy pequeño. Debido el funcionamiento de los árboles, si usaramos todas las variables, el árbol sería mucho más preciso, pudiendo fácilmente legar el error a 0. Lo que sucede es que se somete al árbol a un proceso de regularización para mejorar la generalización, que nos reduce el árbol hasta lo que obtenemos.
 
-Destacar también el error que nos da, que es entorno a $0.15$. 
+Destacar también el error que nos da, que es entorno a 0.16.
 
 ### c)
 
@@ -411,7 +449,7 @@ OJ.prediction[probabilidad.prediccion[,1]<=0.5] = "MM"
 confusionMatrix(OJ.prediction,OJ.test$Purchase)
 ```
 
-Obtenemos un error de 0.80. Podemos ver que el mayor número de fallos se producen al clasificar elementos que son *CH* como *MM*. Antes hemos elegido un punto de corte aleatoriamente. Si quisieramos conseguir mejorar esto, podríamos ser más restrictivos al seleccionar algo como *CH*, subiendo ese punto de corte. Este tipo de estudio es el que podemos observar en la curva ROC.
+Obtenemos un error de 0.82. Más o menos obtenemos el mismo número de falsos positivo que negativos. Antes hemos elegido un punto de corte aleatoriamente. Si quisieramos conseguir modificar este comportamiento, podríamos ser más o menos restrictivos al seleccionar un valor como *CH*, subiendo o bajando ese punto de corte. Este tipo de estudio es el que podemos observar en la curva ROC.
 
 
 ### e) y bonus
@@ -423,4 +461,4 @@ tr0.cv = cv.tree(arbol)
 plot.tree.sequence(tr0.cv)
 ```
 
-Como podemos ver, el tamaño del árbol óptimo está entorno a 5. Esto nos indica que el árbol que hemos generado durante el ejercicio tiene demasiados nodos.
+Como podemos ver, el tamaño del árbol óptimo está entorno a 6. Esto nos indica que el árbol que hemos generado durante el ejercicio tiene demasiados nodos.
