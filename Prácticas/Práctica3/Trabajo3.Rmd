@@ -1,7 +1,7 @@
 ---
 title: "Trabajo 3"
 author: "Luis Suárez Lloréns"
-date: "4 de mayo de 2016"
+date: "4 de junio de 2016"
 output: html_document
 ---
 
@@ -95,44 +95,57 @@ Obtenemos un error bastante bajo, del 6 por ciento.
 
 #### K-NN
 
-Hacemos algo similar que lo realizado para la regresión logística, pero con la función *knn*.
+Hacemos algo similar que lo realizado para la regresión logística, pero con la función *knn*. La única consideración adicional es que, al ser K-NN especialmente sensible a la escala de los datos, vamos a normalizarlos.
+
+```{r}
+Auto.train.knn = scale(Auto.train[,c("displacement","horsepower","weight")])
+media  = attr(Auto.train.knn, "scaled:center")
+escala = attr(Auto.train.knn, "scaled:scale") 
+Auto.test.knn= scale(Auto.test[,c("displacement","horsepower","weight")],media,escala)
+
+Auto.train.knn = data.frame(mpg01=sign(Auto.train$mpg>=median(Auto.train$mpg))*2-1, Auto.train.knn)
+Auto.test.knn = data.frame(mpg01=sign(Auto.test$mpg>=median(Auto.train$mpg))*2-1, Auto.test.knn)
+```
+
+Ahora que ya tenemos los datos normalizados, pasamos a aplicar los modelos.
 
 ```{r}
 library(class)
-prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = 3)
+prediccion.knn = knn(Auto.train.knn[,c("displacement","horsepower","weight")],Auto.test.knn[,c("displacement","horsepower","weight")], Auto.train.knn[,"mpg01"],k = 8)
 
 ```
 
 A diferencia de la regresión, los resultados del clasificador K-NN son directamente las clases. Luego para saber si hemos fallado, sólo tenemos que mirar si los resultados son distintos.
+
 ```{r}
-sum(prediccion.knn != Auto.test$mpg01)/nrow(Auto.test) * 100
+sum(prediccion.knn != Auto.test.knn$mpg01)/nrow(Auto.test.knn) * 100
 ```
 
-El error que encontramos está entorno al 8 por ciento.
+El error que encontramos está entorno al 6 por ciento.
 
 Para intentar conocer el mejor parámetro de la variable *k*, vamos a realizar la prueba anterior cambiando los valores de k.
 
 ```{r}
 for(k in 1:20){
-  prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = k)
-  error = sum(prediccion.knn != Auto.test$mpg01)/nrow(Auto.test) * 100
+  prediccion.knn = knn(Auto.train.knn[,c("displacement","horsepower","weight")],Auto.test.knn[,c("displacement","horsepower","weight")], Auto.train.knn[,"mpg01"],k = k)
+  error = sum(prediccion.knn != Auto.test.knn$mpg01)/nrow(Auto.test.knn) * 100
   cat(paste0("K: ",k, " \tError: ",error,"\n"))
 }
 ```
 
-Podemos ver, los valores que tienen menos error son 5 y 7. No tenemos más información, luego no podemos decidirnos entre los dos. 
+Podemos ver que hay muchos valores donde obtenemos el mismo error. No tenemos más información, luego no podemos decidirnos entre ellos. 
 
 R tiene una funcionalidad que, automáticamente nos devuelve el mejor parámetro *k*. Es la función *tune.knn()* de la librería *e1071*.
 ```{r warning=FALSE}
 library(e1071)
-tune.values = tune.knn(x = Auto.train[,c("displacement","horsepower","weight")], y = as.factor(Auto.train[,"mpg01"]),k = 1:20,tunecontrol = tune.control(sampling = "cross"), cross = 10)
+tune.values = tune.knn(x = Auto.train.knn[,c("displacement","horsepower","weight")], y = as.factor(Auto.train.knn[,"mpg01"]),k = 1:20,tunecontrol = tune.control(sampling = "cross"), cross = 10)
 summary(tune.values)
 ```
 
-Para poder realizar el ejercicio sobre la curva ROC, guardamos la predicción del K-NN, pero obteniendo la probabilidad de pertenencia a la clase, y no sólo la clase.
+El método nos indica que el mejor k es 8. Para poder realizar el ejercicio sobre la curva ROC, guardamos la predicción del K-NN, pero obteniendo la probabilidad de pertenencia a la clase, y no sólo la clase.
 
 ```{r}
-prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = 5, prob = TRUE)
+prediccion.knn = knn(Auto.train.knn[,c("displacement","horsepower","weight")],Auto.test.knn[,c("displacement","horsepower","weight")], Auto.train.knn[,"mpg01"],k = 8, prob = TRUE)
 
 prob <- attr(prediccion.knn, "prob")
 prob <- 2*ifelse(prediccion.knn == "-1", 1-prob, prob) - 1
@@ -151,12 +164,12 @@ plot(perf, col=rainbow(10))
 
 Después, pintamos la curva del clasificador K-NN
 ```{r}
-pred <- prediction(prob, Auto.test$mpg01)
+pred <- prediction(prob, Auto.test.knn$mpg01)
 perf <- performance(pred, measure = "tpr", x.measure = "fpr") 
 plot(perf, col=rainbow(10))
 ```
 
-Podemos ver que tenemos curvas similares en ambos casos. Destacar que parece que el K-NN trabaja mejor con pocos falsos positivos, lo que nos puede llevar a elegirlo sobre la regresión logística en algunos casos.
+Podemos ver que tenemos curvas similares en ambos casos. Eso sí, parece que K-NN se comporta algo mejor, pues la curva parece dominar a la de la regresión.
 
 ### e) (Bonus)
 
@@ -175,12 +188,21 @@ for(i in 1:5){
   Auto.train = data.frame(mpg01=sign(Auto.train$mpg>=median(Auto.train$mpg))*2-1, Auto.train)
   Auto.test = data.frame(mpg01=sign(Auto.test$mpg>=median(Auto.train$mpg))*2-1, Auto.test)
   
+  Auto.train.knn = scale(Auto.train[,c("displacement","horsepower","weight")])
+  media  = attr(Auto.train.knn, "scaled:center")
+  escala = attr(Auto.train.knn, "scaled:scale") 
+  Auto.test.knn= scale(Auto.test[,c("displacement","horsepower","weight")],media,escala)
+  
+  Auto.train.knn = data.frame(mpg01=sign(Auto.train$mpg>=median(Auto.train$mpg))*2-1, Auto.train.knn)
+  Auto.test.knn = data.frame(mpg01=sign(Auto.test$mpg>=median(Auto.train$mpg))*2-1, Auto.test.knn)
+  
   #Regresion logistica
+  modelo.RegLog = glm(mpg01 ~ displacement + horsepower + weight, data = Auto.train, start=c(log(mean(Auto.train$mpg)),0,0,0))
   prediccion.glm = predict(modelo.RegLog,newdata = Auto.test)
   error.log[i] = sum((sign(-prediccion.glm*Auto.test$mpg01)+1)/2)/nrow(Auto.test) * 100
   #Clasificacion K-NN
-  prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.test[,c("displacement","horsepower","weight")], Auto.train[,"mpg01"],k = 5)
-  error.knn[i] = sum(prediccion.knn != Auto.test$mpg01)/nrow(Auto.test) * 100
+  prediccion.knn = knn(Auto.train.knn[,c("displacement","horsepower","weight")],Auto.test.knn[,c("displacement","horsepower","weight")], Auto.train.knn[,"mpg01"],k = 5)
+  error.knn[i] = sum(prediccion.knn != Auto.test.knn$mpg01)/nrow(Auto.test.knn) * 100
 }
 
 cat(paste0("Error medio cometido con regresión logística: ",mean(error.log)))
@@ -188,7 +210,7 @@ cat(paste0("Error medio cometido con K-NN: ",mean(error.knn)))
 ```
 
 
-Podemos por tanto, confirmar lo visto en el apartado anterior. La regresión logística nos ofrece un error menor que K-NN.
+Podemos por tanto, confirmar lo visto en el apartado anterior. El K-NN funciona ligeramente mejor que la regresión.
 
 ## Apartado 2
 
@@ -389,17 +411,8 @@ OJ.prediction[probabilidad.prediccion[,1]<=0.5] = "MM"
 confusionMatrix(OJ.prediction,OJ.test$Purchase)
 ```
 
-Obtenemos un error de $0.76$. Destacar que la mayor parte del error se produce al intentar clasificar muestras de MM, pues obtenemos muchos falsos *CH*. Por tanto si fueramos más restriccivos con la clasificación de *CH* (subiendo el valor 0.5) deberíamos obtener mejores resultados.
+Obtenemos un error de 0.80. Podemos ver que el mayor número de fallos se producen al clasificar elementos que son *CH* como *MM*. Antes hemos elegido un punto de corte aleatoriamente. Si quisieramos conseguir mejorar esto, podríamos ser más restrictivos al seleccionar algo como *CH*, subiendo ese punto de corte. Este tipo de estudio es el que podemos observar en la curva ROC.
 
-```{r}
-probabilidad.prediccion = predict(arbol,OJ.test)
-OJ.prediction= vector(length = nrow(probabilidad.prediccion))
-OJ.prediction[probabilidad.prediccion[,1]>0.6] = "CH"
-OJ.prediction[probabilidad.prediccion[,1]<=0.6] = "MM"
-confusionMatrix(OJ.prediction,OJ.test$Purchase)
-```
-
-Efectivamente, a costa de empeorar la sensitividad, mejoramos el error general y sobretodo la espificidad. 
 
 ### e) y bonus
 
