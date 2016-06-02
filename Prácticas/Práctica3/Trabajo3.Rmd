@@ -83,7 +83,6 @@ Con el modelo ya aprendido, realizamos la predicción del test.
 
 ```{r}
 prediccion.glm = predict(modelo.RegLog,newdata = Auto.test)
-prediccion.glm
 ```
 
 Ahora, definimos como error cuando el clasificador nos daría la clase incorrecta. Esto se produce cuando el signo de la predicción y el de *mpg01* son distintos.
@@ -124,7 +123,7 @@ for(k in 1:20){
 Podemos ver, los valores que tienen menos error son 5 y 7. No tenemos más información, luego no podemos decidirnos entre los dos. 
 
 R tiene una funcionalidad que, automáticamente nos devuelve el mejor parámetro *k*. Es la función *tune.knn()* de la librería *e1071*.
-```{r}
+```{r warning=FALSE}
 library(e1071)
 tune.values = tune.knn(x = Auto.train[,c("displacement","horsepower","weight")], y = as.factor(Auto.train[,"mpg01"]),k = 1:20,tunecontrol = tune.control(sampling = "cross"), cross = 10)
 summary(tune.values)
@@ -137,7 +136,6 @@ prediccion.knn = knn(Auto.train[,c("displacement","horsepower","weight")],Auto.t
 
 prob <- attr(prediccion.knn, "prob")
 prob <- 2*ifelse(prediccion.knn == "-1", 1-prob, prob) - 1
-prob
 ```
 
 
@@ -158,10 +156,12 @@ perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 plot(perf, col=rainbow(10))
 ```
 
-### e)
+Podemos ver que tenemos curvas similares en ambos casos. Destacar que parece que el K-NN trabaja mejor con pocos falsos positivos, lo que nos puede llevar a elegirlo sobre la regresión logística en algunos casos.
+
+### e) (Bonus)
 
 Para poder estimar los dos modelos usando validación cruzada, tenemos que generar las 5 particiones. Para crear los *folds* o particiones que usaremos para la validación cruzada, podemos usar la función *createFolds* del paquete *caret*.
-```{r}
+```{r warning=FALSE}
 library(caret)
 folds = createFolds(1:nrow(Auto), k = 5)
 
@@ -188,9 +188,11 @@ cat(paste0("Error medio cometido con K-NN: ",mean(error.knn)))
 ```
 
 
-Podemos por tanto, confirmar lo visto en el apartado anterior. La regresión logística parece comportarse mejor que K-NN.
+Podemos por tanto, confirmar lo visto en el apartado anterior. La regresión logística nos ofrece un error menor que K-NN.
 
 ## Apartado 2
+
+Primero, vamos a cargar los datos, y a realizar una partición de los mismos.
 
 ```{r}
 library(MASS)
@@ -200,26 +202,83 @@ Boston.test = Boston[-idx.train,]
 ```
 
 Vamos a usar un ajuste de tipo LASSO.
-```{r}
+
+```{r warning=FALSE}
 library(glmnet)
 prediccion.lasso <- glmnet(x = as.matrix(Boston.train[,-1]), y = Boston.train[,1])
-#prediccion.lasso <- lars(x, y, type="lasso")
-plot(prediccion.lasso)
+cv = cv.glmnet(x = as.matrix(Boston.train[,-1]), y = Boston.train[,1], alpha = 1)
 ```
 
-```{r}
-cv = cv.glmnet(x = as.matrix(Boston.train[,-1]), y = Boston.train[,1], alpha = 1)
-bestlam = cv$lambda.min
-plot(cv)
-cv
-bestlam
-```
+Ahora, tomamos los coeficientes y vemos los que están por encima de un umbral dado. En este caso hemos escogido 0.5.
 
 ```{r}
 lasso.coef = predict(prediccion.lasso,type="coefficients", s = cv$lambda.min)[1:14,]
-lasso.coef
-abs(lasso.coef)>0.5
+coef = abs(lasso.coef)>0.5
+coef
+Boston.train[1,coef]
 ```
+
+Por tanto, vemos que las variables que vamos a usar son *chas*, *nox*, *rm*, *dis* y *rad*.
+
+### b)
+
+Ahora entrenamos el modelo con *weight-decay* que nos pide el ejercicio con las variables que conseguimos en el apartado anterior.
+
+```{r}
+wd = glmnet(x = as.matrix(Boston.train[,coef]), y = Boston.train[,1], alpha = 0)
+```
+
+Con el modelo ya entrenado, vamos a predecir los datos del test, y a ver el error cometido. 
+
+```{r}
+prediction = predict(wd, newx = as.matrix(Boston.test[,coef]),s = cv$lambda.min, type = "response")
+error = mean((prediction - Boston.test[,1])^2)
+cat(paste0("Error cometido: ",error))
+```
+
+El error que obtenemos es bastante bueno, por tanto, en un principio no hay problema de *underfitting*.
+
+### c)
+
+Vamos a generar la variable adicional.
+
+```{r}
+crim01 = sign(Boston[,1] >= median(Boston[,1]))*2-1
+new.crim = crim01[idx.train]
+Boston.train.01 = data.frame(Boston.train, new.crim)
+new.crim = crim01[-idx.train]
+Boston.test.01  = data.frame(Boston.test, new.crim)
+```
+
+Ahora, una vez tenemos generados las nuevas variables, vamos a entrenar el SVM con núcleo lineal.
+
+```{r}
+model.svm = svm(new.crim ~ chas+nox+rm+dis+rad, data = Boston.train.01, kernel = "linear")
+prediction = predict(model.svm, newdata = Boston.test.01)
+
+(sum((sign(-prediction*Boston.test.01$new.crim)+1)/2)/nrow(Boston.test.01)) *100
+```
+
+
+Ahora vamos a probar con otros núcleos, para ver si mejoramos el resultado. Primero veamos que pasa con un kernel polinomial.
+
+```{r}
+model.svm = svm(new.crim ~ chas+nox+rm+dis+rad, data = Boston.train.01,kernel = "polynomial")
+prediction = predict(model.svm, newdata = Boston.test.01)
+
+(sum((sign(-prediction*Boston.test.01$new.crim)+1)/2)/nrow(Boston.test.01)) *100
+```
+
+Y ahora con un kernel radial.
+
+```{r}
+model.svm = svm(new.crim ~ chas+nox+rm+dis+rad, data = Boston.train.01,kernel = "radial")
+prediction = predict(model.svm, newdata = Boston.test.01)
+
+(sum((sign(-prediction*Boston.test.01$new.crim)+1)/2)/nrow(Boston.test.01)) *100
+```
+
+Como podemos ver, el kernel radial obtiene los mejores resultados de error en test.
 
 ## Apartado 3
 
