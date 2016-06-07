@@ -75,7 +75,7 @@ TODO\\
 \begin{cuestion}
 \end{cuestion}
 \begin{respuesta}
-
+TODO
 \end{respuesta}
 
 %4
@@ -92,6 +92,7 @@ Dado esto, hace que no tenga sentido la parte de obtener una cota del error, pue
 \begin{cuestion}
 \end{cuestion}
 \begin{respuesta}
+TODO
 \end{respuesta}
 
 %6
@@ -112,24 +113,51 @@ Por otro lado, tenemos que no es adecuado de todas formas seleccionar la cota pa
 \begin{cuestion}
 \end{cuestion}
 \begin{respuesta}
+TODO
 \end{respuesta}
 
 %8
 \begin{cuestion}
 \end{cuestion}
 \begin{respuesta}
+Sabemos que la tangente hiperbólica lleva los valores muy grandes en valores que son casi 1 o -1. Por tanto, la idea que perseguimos es convertir el número que obtengamos en la operación $x_n^Tw_1$ en un número lo suficientemente grande como para quedarse a un $\epsilon$ del valor correspondiente, 1 o -1.\\
+
+Por tanto, tomamos $w_2 =  w_1 \alpha$. Por simplificar la notación, llamamos $\beta$ a $x_n^Tw_1$. Entonces la ecuación queda de la siguiente forma:
+
+\[
+\ \left| \textrm{sign}(\beta)- \textrm{tanh}(\beta \alpha)\right| \leq \epsilon
+\]
+
+Tanto si $\textrm{sign}(\beta)$ es positivo como si es negativo, el problema es el mismo. Tenemos que encontrar un valor de $\alpha$ que haga el producto lo suficientemente grande. Pero $\beta$ es una constante, luego siempre podemos encontrar un número $\alpha$ que haga el producto lo suficientemente grande para que se cumpla la inecuación. 
 \end{respuesta}
 
 %9
 \begin{cuestion}
 \end{cuestion}
 \begin{respuesta}
+TODO
 \end{respuesta}
 
 %10
 \begin{cuestion}
 \end{cuestion}
 \begin{respuesta}
+TODO: Pasar la derivada.
+
+Ahora que tenemos calculado el gradiente, podemos seguir con el siguiente apartado. En él, se nos pregunta que pasa con la expresión del gradiente si $w \rightarrow \infty$.\\
+
+Obtenemos que se calcula la tangente hiperbólica de un número que también tiende a infinito, y esa tangente hiperbólica tiende a 1 o a -1. Entonces el término $1-\textrm{tanh}(x_n^Tw)^2$ tiende a 0. Entonces el producto tiende a 0 y la sumatoria también.\\
+ 
+Obtenemos entonces lo siguiente:
+
+\[
+\ \textrm{Si }w \rightarrow \infty ,  \nabla E_{in} \rightarrow 0
+\]
+
+Esto es un gran problema. Las redes neuronales utilizan el descenso del gradiente o alguna variante del mismo para aprender los pesos. Pero si el gradiente tiende a 0, la variación de los pesos también tendería a 0, y el método se atascaría y no podría aprender.\\
+
+Si a esto le añadimos que, dado al "back-propagation", el resto de las derivadas que dependen de esta, irán a 0 también. Luego no sólo una capa queda parada en el aprendizaje, si no todas. Por tanto, este problema puede bloquear totalmente el aprendizaje de una red neuronal.
+
 \end{respuesta}
 
 \end{document}
