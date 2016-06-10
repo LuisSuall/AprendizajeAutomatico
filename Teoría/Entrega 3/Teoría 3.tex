@@ -75,7 +75,13 @@ TODO\\
 \begin{cuestion}
 \end{cuestion}
 \begin{respuesta}
-TODO
+El enunciado dice que se obtiene una muestra suficientemente grande, pero no se asegura anda sobre la distribución de la misma. Para poder obtener unos buenos resultados sobre la distribución de los peces, necesitamos que las muestras estudiadas se obtengan de la misma distribución.\\
+
+Esto no tiene porque ser así con el experimento propuesto. Al echar una red, puede que alcance a un banco de peces de un tipo concreto, y que haya tipos de peces que no se encuentran en la muestra por no encontrarse en esa zona concreta, obteniendo un resultado sesgado.\\
+
+Ahora supongamos que también se cumpla que los datos representan bien todas las clases de peces. En este caso, no podremos asegurar que esa sea la distribución. Lo más que podemos asegurar es que sea muy probable que sea esa la distribución del tamaño de los peces del lago.\\
+ 
+Determinar exactamente la distribución es una tarea prácticamente imposible. Si relajamos un poco el objetivo y que lo que queremos es una estimación de la distribución, podríamos decir que tenemos un alto grado de creencia de que el estudio cumple el objetivo.
 \end{respuesta}
 
 %4
@@ -135,7 +141,17 @@ Tanto si $\textrm{sign}(\beta)$ es positivo como si es negativo, el problema es 
 \begin{cuestion}
 \end{cuestion}
 \begin{respuesta}
-TODO
+
+\textbf{Número de evaluaciones de $\theta$}\\
+En cada nodo de la red, se aplica una vez la función $\theta$. Por tanto, es directo que se realizan $V$ evaluaciones de la función $\theta$.\\
+
+\textbf{Número de productos:}\\
+En el proceso de paso hacia delante, se realiza en cada capa el producto del vector de las entradas por la matriz de pesos. Por tanto, se realizan tantos productos como pesos haya en la matriz de pesos. Al sumar todas las capas, obtenemos tantas multiplicaciones como pesos haya en la red. Es decir, se realizan $Q$ productos.\\
+
+\textbf{Número de sumas:}\\
+En cada capa, se realiza el producto del vector de las entradas por la matriz de pesos. Ya hemos comentado que se realizan tantos productos como pesos haya en la capa, y tras esto, hay que sumar los valores, para obtener las entradas para la función $\theta$. En una capa, se realizan número de pesos menos el número de salidas sumas. En total, al sumar todas las capas, tenemos que se realizan $Q-V$ sumas.\\
+
+
 \end{respuesta}
 
 %10
