@@ -12,7 +12,7 @@
 \usepackage{eurosym}
 
 \author{Luis Suárez Lloréns}
-\title{Cuestionario 2}
+\title{Cuestionario 3}
 \date{}
 
 \theoremstyle{definition}
@@ -85,7 +85,7 @@ Simplemente tenemos que realizar la siguiente operación:\\
 Se obtendrían 49969 \euro.\\
 
 \textbf{f)}
-TODO\\
+Esta situación nos muestra que, con pocas muestras, es muy fácil crear una predicción correcta. Conforme aumenta el número de partidos, el número de escenarios posible crecerá. Crear un ajuste que obtenga buenos resultados sobre muchas muestras será por tanto más creíble que con pocas, pues como hemos visto en este ejemplo, para un número pequeño de muestras, podríamos hasta generar a mano todas las diferentes posibilidades sin mucho problema.\\
 
 \end{respuesta}
 
@@ -126,7 +126,6 @@ Cada algoritmo trabaja con un conjunto $\mathcal{H}$ de tamaño 500. Nuestro des
 \end{enumerate}
 \end{cuestion}
 \begin{respuesta}
-TODO
 \end{respuesta}
 
 %6
@@ -157,7 +156,6 @@ Por otro lado, tenemos que no es adecuado de todas formas seleccionar la cota pa
 
 \end{cuestion}
 \begin{respuesta}
-TODO
 \end{respuesta}
 
 %8
@@ -198,13 +196,28 @@ En cada capa, se realiza el producto del vector de las entradas por la matriz de
 
 %10
 \begin{cuestion}
-Para el perceptron sigmoidal $h(x) = tanh(\mathbf{x}^T\mathbf{w})$, sea el error de ajuste $E_{in}(\mathbf{w} = \frac{1}{N} \sum_{n=1}^N (tanh(\mathbf{x}_n^T\mathbf{w}) - y_n)^2$. Mostrar que
+Para el perceptron sigmoidal $h(x) = tanh(\mathbf{x}^T\mathbf{w})$, sea el error de ajuste $E_{in}(\mathbf{w}) = \frac{1}{N} \sum_{n=1}^N (tanh(\mathbf{x}_n^T\mathbf{w}) - y_n)^2$. Mostrar que
 \[ \nabla E_{in}(\mathbf{w}) = \frac{2}{N} \sum_{n=1}^N (tanh(\mathbf{x}_n^T \mathbf{w}) -y_n) (1-tanh(\mathbf{x}_n^T \mathbf{w})^2)\mathbf{x}_n	\]
 
 Si $\mathbf{w} \rightarrow \infty$ ¿qué le sucede al gradiente? ¿Cómo se relaciona esto con la dificultad de optimizar el perceptron multicapa?\\
 \end{cuestion}
 \begin{respuesta}
-TODO: Pasar la derivada.
+Primero, vamos a realizar el gradiente de la función $E_{in}$.\\
+
+\[
+\ E_{in}(\mathbf{w}) = \frac{1}{N} \sum_{n=1}^N (tanh(\mathbf{x}_n^T\mathbf{w}) - y_n)^2 =  \frac{2}{N} \sum_{n=1}^N (tanh(\mathbf{x}_n^T\mathbf{w}) - y_n)^{\prime}=
+\]
+\[
+\ = \frac{2}{N} \sum_{n=1}^N (tanh(\mathbf{x}_n^T\mathbf{w}) - y_n) (tanh(\mathbf{x}_n^T\mathbf{w}) - y_n)^{\prime} = 
+\]
+
+\[
+\ = \frac{2}{N} \sum_{n=1}^N (tanh(\mathbf{x}_n^T\mathbf{w}) - y_n) (1 - tanh(x_n^Tw)^2)(x_n^Tw)^{\prime} = 
+\]
+
+\[
+\ \frac{2}{N} \sum_{n=1}^N (tanh(\mathbf{x}_n^T \mathbf{w}) -y_n) (1-tanh(\mathbf{x}_n^T \mathbf{w})^2)\mathbf{x}_n
+\]
 
 Ahora que tenemos calculado el gradiente, podemos seguir con el siguiente apartado. En él, se nos pregunta que pasa con la expresión del gradiente si $w \rightarrow \infty$.\\
 
