@@ -23,6 +23,10 @@ vignettes/*.pdf
 *.log
 *.out
 *.synctex.gz
+*.toc
 
 # html
 *.html
+
+# zip
+*.zip

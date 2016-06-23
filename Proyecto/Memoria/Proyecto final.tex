@@ -1,0 +1,151 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% University Assignment Title Page 
+% LaTeX Template
+% Version 1.0 (27/12/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% WikiBooks (http://en.wikibooks.org/wiki/LaTeX/Title_Creation)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+% 
+% Instructions for using this template:
+% This title page is capable of being compiled as is. This is not useful for 
+% including it in another document. To do this, you have two options: 
+%
+% 1) Copy/paste everything between \begin{document} and \end{document} 
+% starting at \begin{titlepage} and paste this into another LaTeX file where you 
+% want your title page.
+% OR
+% 2) Remove everything outside the \begin{titlepage} and \end{titlepage} and 
+% move this file to the same directory as the LaTeX file you wish to add it to. 
+% Then add \input{./title_page_1.tex} to your LaTeX file where you want your
+% title page.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{enumerate}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{eurosym}
+
+\begin{document}
+
+\begin{titlepage}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} % Defines a new command for the horizontal lines, change thickness here
+
+\center % Center everything on the page
+ 
+%----------------------------------------------------------------------------------------
+%	HEADING SECTIONS
+%----------------------------------------------------------------------------------------
+
+\textsc{\LARGE Universidad de Granada}\\[1.5cm] % Name of your university/college
+\textsc{\Large Proyecto final:}\\[0.5cm] % Major heading such as course name
+\textsc{\large Aprendizaje Automático}\\[0.5cm] % Minor heading such as course title
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\HRule \\[0.4cm]
+{ \huge \bfseries Parkinson Telemonitoring}\\[0.4cm] % Title of your document
+\HRule \\[1.5cm]
+ 
+%----------------------------------------------------------------------------------------
+%	AUTHOR SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Autor:}\\
+Luis Suárez Lloréns % Your name
+\end{flushleft}
+\end{minipage}
+~
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\end{flushright}
+\end{minipage}\\[4cm]
+
+% If you don't want a supervisor, uncomment the two lines below and remove the section above
+%\Large \emph{Author:}\\
+%John \textsc{Smith}\\[3cm] % Your name
+
+%----------------------------------------------------------------------------------------
+%	DATE SECTION
+%----------------------------------------------------------------------------------------
+
+{\large \today}\\[3cm] % Date, change the \today to a set date if you want to be precise
+
+%----------------------------------------------------------------------------------------
+%	LOGO SECTION
+%----------------------------------------------------------------------------------------
+
+%\includegraphics{Logo}\\[1cm] % Include a department/university logo - this will require the graphicx package
+ 
+%----------------------------------------------------------------------------------------
+
+\vfill % Fill the rest of the page with whitespace
+
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Motivación}
+
+La medicina se ha visto impulsada en los últimos años por los avances técnicos. En concreto, se han utilizado técnicas de inteligencia artificial para la ayuda en el diagnóstico y seguimiento de enfermedades.\\
+
+El objetivo no es sustituir la función de los profesionales del campo de la medicina, si no crear herramientas para mejorar el tratamiento a los pacientes.\\
+
+Este trabajo se centra en el seguimiento de la enfermedad de Parkinson, y en obtener una estimación del grado en la que esta afecta al paciente de manera automática, mediante la medición de la voz del mismo. Además, estas mediciones se pueden realizar de forma automática en la casa del paciente.\\
+
+Todo esto nos permitiría realizar un mejor seguimiento del paciente, y reduciendo posibles inconvenientes, como los desplazamientos por parte del paciente a su centro médico y la realización de pruebas médicas más costosas, tanto económicamente como en tiempo de personal.\\
+
+\section{Información de los datos}
+
+La base de datos, creada por los investigadores Athanasios Tsanas y Max Little de la universidad de Oxford en colaboración con varios centros médicos de los Estados Unidos, contiene datos relativos al habla de varios enfermos de Parkinson.\\
+
+En la creación de la base de datos, 42 pacientes fueron monitorizados en un periodo de 6 meses. En total, se realizaron 5,875 mediciones a los pacientes.\\
+
+En la investigación se trata de conocer el grado de Parkinson del paciente, utilizando para ello la escala unificada para la evaluación de la enfermedad de Parkinson (UPDRS). Por tanto, el objetivo es utilizar los 16 valores obtenidos de la medición del habla para estimar los valores de las variables "motor UPDRS" y "total UPDRS".\\
+
+En la tabla de los datos también se puede puede consultar el identificador del paciente al que se realizó la medición, su edad, género y el momento exacto de su realización, pero el estudio original ignora estos factores.\\
+
+\section{Selección de modelos}
+
+Ya hemos visto que el objetivo de este estudio es estimar dos valores reales. Nos centraremos para la selección de modelos en los métodos de regresión que hemos estudiado durante la asignatura.\\
+
+Utilizaremos como una primera aproximación la regresión logística. Esta técnica, básica en el desarrollo del aprendizaje automático, sigue siendo de validez y puede obtener buenos resultados. Además, dada la simplicidad de la técnica, podemos ajustar varios modelos ---lineales, cuadráticos, ...--- y utilizar estos resultados como medidas para comparar los resultados obtenidos con técnicas más complejas. Destacar el posible inconveniente de tener que elegir las familias de funciones manualmente.\\
+
+Otra aproximación posible es usar un modelo de función de base radial. Parece lógico pensar que dos mediciones con valores parecidos nos darán valores de UPDRS parecidos. Para poder usar esta técnica, además de la selección del núcleo, tenemos que preocuparnos de manipular los datos, normalizándolos, pues los resultados de las mediciones no se encuentran todos en la misma escala.\\
+
+Por último, utilizaremos una modelo de red neuronal multicapa. La potencia y principal bondad de este tipo de modelos es su capacidad de aprender automáticamente posibles relaciones ocultas de gran complejidad de oculta detrás de los datos. Podríamos entender esto como una especie de autoselección de características. Esto es importante en el ámbito de la medicina, donde los parámetros están interconectados, posiblemente mediante procesos muy complejos de muy difícil modelización en ecuaciones. El problema de usar este tipo de técnicas es la selección de la arquitectura ---número de neuronas, distribución de las neuronas en capas, tipo de funciones no lineales, ...---.\\
+
+
+\section{Manipulación de los datos}
+
+\subsection{Codificación de los datos}
+
+Los datos obtenidos directamente se encuentran en una codificación perfecta para empezar a trabajar. Se tratan de 18 columnas ---una vez eliminadas las columnas de identificador, edad,...--- de valores reales, dos de ellas son los valores a estimar, y el resto las mediciones de la voz de los pacientes.\\
+
+\subsection{Normalización}
+\subsection{Selección de características}
+\section{Resultados}
+\end{document}
