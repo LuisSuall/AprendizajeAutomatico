@@ -1,0 +1,58 @@
+---
+title: "Proyecto AA"
+author: "Luis Suárez Lloréns"
+date: "21 de junio de 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Lectura de datos
+
+```{r }
+parkinsons_updrs.data <- read.csv("./Data/parkinsons_updrs.data.csv")
+parkinson <- parkinsons_updrs.data[,-c(1,2,3,4)]
+```
+
+## Minianálisis datos
+```{r}
+summary(parkinson)
+```
+
+## Creación de test
+
+```{r}
+idx.train = sample(nrow(parkinson),size = nrow(parkinson)*0.8)
+parkinson.test = parkinson[-idx.train,]
+parkinson.train = parkinson[idx.train,]
+
+
+```
+
+
+## Regresión básica
+
+```{r}
+modelo.RegLog = glm(motor_UPDRS ~ . - total_UPDRS, data = parkinson.train, start=c(log(mean(parkinson$motor_UPDRS)),0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
+modelo.RegLog
+prediccion.glm = predict(modelo.RegLog,newdata = parkinson.test)
+prediccion.glm[1:20]
+parkinson.test[1:20, "motor_UPDRS"]
+sum((prediccion.glm-parkinson.test$motor_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.glm-parkinson.test$motor_UPDRS))/nrow(parkinson.test)
+
+```
+
+```{r}
+modelo.RegLog = glm(total_UPDRS ~ . - motor_UPDRS, data = parkinson.train, start=c(log(mean(parkinson$total_UPDRS)),0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
+modelo.RegLog
+prediccion.glm = predict(modelo.RegLog,newdata = parkinson.test)
+prediccion.glm[1:20]
+parkinson[1:20, "total_UPDRS"]
+sum((prediccion.glm-parkinson.test$total_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.glm-parkinson.test$total_UPDRS))/nrow(parkinson.test)
+
+```
+
