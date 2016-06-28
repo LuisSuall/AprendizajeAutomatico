@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+set.seed(0118999881)
 ```
 
 ## Lectura de datos
@@ -27,32 +28,389 @@ summary(parkinson)
 idx.train = sample(nrow(parkinson),size = nrow(parkinson)*0.8)
 parkinson.test = parkinson[-idx.train,]
 parkinson.train = parkinson[idx.train,]
-
-
 ```
 
 
-## Regresión básica
+#Aproximación inicial: Regresión directa sobre todos los datos
 
+## Regresión lineal -> lineal
+
+### MOTOR UPDRS
 ```{r}
-modelo.RegLog = glm(motor_UPDRS ~ . - total_UPDRS, data = parkinson.train, start=c(log(mean(parkinson$motor_UPDRS)),0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
-modelo.RegLog
+modelo.RegLog = lm(motor_UPDRS ~ . - total_UPDRS, data = parkinson.train)
+#modelo.RegLog
+prediccion.lm = predict(modelo.RegLog,newdata = parkinson.test)
+#prediccion.lm[1:20]
+#parkinson.test[1:20, "motor_UPDRS"]
+sum((prediccion.lm-parkinson.test$motor_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.lm-parkinson.test$motor_UPDRS))/nrow(parkinson.test)
+
+```
+
+### TOTAL UPDRS
+```{r}
+modelo.RegLog = glm(total_UPDRS ~ . - motor_UPDRS, data = parkinson.train)
+#modelo.RegLog
 prediccion.glm = predict(modelo.RegLog,newdata = parkinson.test)
-prediccion.glm[1:20]
-parkinson.test[1:20, "motor_UPDRS"]
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "total_UPDRS"]
+#prediccion.glm[1:20]-parkinson.test[1:20, "total_UPDRS"]
+
+sum((prediccion.glm-parkinson.test$total_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.glm-parkinson.test$total_UPDRS))/nrow(parkinson.test)
+```
+
+## Regresión logística -> lineal
+
+### MOTOR UPDRS
+```{r}
+modelo.RegLog = glm(motor_UPDRS ~ . - total_UPDRS, data = parkinson.train)
+#modelo.RegLog
+prediccion.glm = predict(modelo.RegLog,newdata = parkinson.test)
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "motor_UPDRS"]
 sum((prediccion.glm-parkinson.test$motor_UPDRS)^2)/nrow(parkinson.test)
 sum(abs(prediccion.glm-parkinson.test$motor_UPDRS))/nrow(parkinson.test)
 
 ```
 
+### TOTAL UPDRS
 ```{r}
-modelo.RegLog = glm(total_UPDRS ~ . - motor_UPDRS, data = parkinson.train, start=c(log(mean(parkinson$total_UPDRS)),0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
-modelo.RegLog
+modelo.RegLog = lm(total_UPDRS ~ . - motor_UPDRS, data = parkinson.train)
+#modelo.RegLog
+prediccion.lm = predict(modelo.RegLog,newdata = parkinson.test)
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "total_UPDRS"]
+
+#prediccion.glm[1:20]-parkinson.test[1:20, "total_UPDRS"]
+
+sum((prediccion.lm-parkinson.test$total_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.lm-parkinson.test$total_UPDRS))/nrow(parkinson.test)
+```
+
+## Regresión logística -> cuadrático
+
+### MOTOR UPDRS
+```{r}
+modelo.RegLog = glm(motor_UPDRS ~ (. - total_UPDRS)^2, data = parkinson.train)
+#modelo.RegLog
 prediccion.glm = predict(modelo.RegLog,newdata = parkinson.test)
-prediccion.glm[1:20]
-parkinson[1:20, "total_UPDRS"]
-sum((prediccion.glm-parkinson.test$total_UPDRS)^2)/nrow(parkinson.test)
-sum(abs(prediccion.glm-parkinson.test$total_UPDRS))/nrow(parkinson.test)
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "motor_UPDRS"]
+sum((prediccion.glm-parkinson.test$motor_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.glm-parkinson.test$motor_UPDRS))/nrow(parkinson.test)
 
 ```
 
+### TOTAL UPDRS
+```{r}
+modelo.RegLog = glm(total_UPDRS ~ (. - motor_UPDRS)^2, data = parkinson.train)
+#modelo.RegLog
+prediccion.glm = predict(modelo.RegLog,newdata = parkinson.test)
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "total_UPDRS"]
+
+#prediccion.glm[1:20]-parkinson.test[1:20, "total_UPDRS"]
+
+sum((prediccion.glm-parkinson.test$total_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.glm-parkinson.test$total_UPDRS))/nrow(parkinson.test)
+```
+
+# Intento de mejora: Parámetricos con selección de características.
+
+
+Para que los valores pesos devueltos por LASSO sean justos, vamos a normalizar la base de datos.
+
+```{r}
+parkinson.train.normalized = scale(parkinson.train)
+```
+
+
+Vamos a usar un ajuste de tipo LASSO.
+
+```{r warning=FALSE}
+library(glmnet)
+prediccion.lasso <- glmnet(x = as.matrix(parkinson.train.normalized[,c(-1,-2)]), y = parkinson.train.normalized[,1])
+cv = cv.glmnet(x = as.matrix(parkinson.train.normalized[,c(-1,-2)]), y = parkinson.train.normalized[,1], alpha = 1)
+```
+
+Ahora, tomamos los coeficientes y vemos los que están por encima de un umbral dado.
+
+```{r}
+lasso.coef = predict(prediccion.lasso,type="coefficients", s = cv$lambda.min)[1:17,]
+coef = abs(lasso.coef)>0.1
+lasso.coef
+coef
+```
+
+Podemos seleccionar, gracias a este proceso, una selección de características de la cantidad deseada, modificando el umbral.
+
+Vamos a considerar dos conjuntos de aquí en adelante, cortando en 0.02 y en 0.01
+
+**SC1:**
+0.01 -> Jitter... + Jitter.Abs. + Shimmer.APQ5 + Shimmer.APQ11  + HNR + DFA + PPE
+
+**SC2**
+0.02 -> Shimmer.APQ5 + Shimmer.APQ11 + HNR + DFA + PPE
+
+
+## SC1: Regresión logística -> lineal
+
+### MOTOR UPDRS
+```{r}
+modelo.RegLog = glm(motor_UPDRS ~ Jitter... + Jitter.Abs. + Shimmer.APQ5 + Shimmer.APQ11  + HNR + DFA + PPE, data = parkinson.train)
+#modelo.RegLog
+prediccion.glm = predict(modelo.RegLog,newdata = parkinson.test)
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "motor_UPDRS"]
+sum((prediccion.glm-parkinson.test$motor_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.glm-parkinson.test$motor_UPDRS))/nrow(parkinson.test)
+
+```
+
+### TOTAL UPDRS
+```{r}
+modelo.RegLog = lm(total_UPDRS ~ Jitter... + Jitter.Abs. + Shimmer.APQ5 + Shimmer.APQ11  + HNR + DFA + PPE, data = parkinson.train)
+#modelo.RegLog
+prediccion.lm = predict(modelo.RegLog,newdata = parkinson.test)
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "total_UPDRS"]
+
+#prediccion.glm[1:20]-parkinson.test[1:20, "total_UPDRS"]
+
+sum((prediccion.lm-parkinson.test$total_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.lm-parkinson.test$total_UPDRS))/nrow(parkinson.test)
+```
+
+
+## SC2: Regresión logística -> lineal
+
+### MOTOR UPDRS
+```{r}
+modelo.RegLog = glm(motor_UPDRS ~ Shimmer.APQ5 + Shimmer.APQ11 + HNR + DFA + PPE, data = parkinson.train)
+modelo.RegLog
+prediccion.glm = predict(modelo.RegLog,newdata = parkinson.test)
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "motor_UPDRS"]
+sum((prediccion.glm-parkinson.test$motor_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.glm-parkinson.test$motor_UPDRS))/nrow(parkinson.test)
+
+```
+
+### TOTAL UPDRS
+```{r}
+modelo.RegLog = glm(total_UPDRS ~ Shimmer.APQ5 + Shimmer.APQ11 + HNR + DFA + PPE, data = parkinson.train)
+#modelo.RegLog
+prediccion.lm = predict(modelo.RegLog,newdata = parkinson.test)
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "total_UPDRS"]
+
+#prediccion.glm[1:20]-parkinson.test[1:20, "total_UPDRS"]
+
+sum((prediccion.lm-parkinson.test$total_UPDRS)^2)/nrow(parkinson.test)
+
+sum(abs(prediccion.lm-parkinson.test$total_UPDRS))/nrow(parkinson.test)
+```
+
+
+## Mejor resultado papper: Regresión logística -> lineal
+
+### MOTOR UPDRS
+```{r}
+modelo.RegLog = glm(motor_UPDRS ~ HNR + RPDE + DFA + PPE, data = parkinson.train)
+modelo.RegLog
+prediccion.glm = predict(modelo.RegLog,newdata = parkinson.test)
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "motor_UPDRS"]
+sum((prediccion.glm-parkinson.test$motor_UPDRS)^2)/nrow(parkinson.test)
+sum(abs(prediccion.glm-parkinson.test$motor_UPDRS))/nrow(parkinson.test)
+
+```
+
+### TOTAL UPDRS
+```{r}
+modelo.RegLog = glm(total_UPDRS ~ Shimmer.APQ5 + Shimmer.APQ11 + HNR + DFA + PPE, data = parkinson.train)
+#modelo.RegLog
+prediccion.lm = predict(modelo.RegLog,newdata = parkinson.test)
+#prediccion.glm[1:20]
+#parkinson.test[1:20, "total_UPDRS"]
+
+#prediccion.glm[1:20]-parkinson.test[1:20, "total_UPDRS"]
+
+sum((prediccion.lm-parkinson.test$total_UPDRS)^2)/nrow(parkinson.test)
+
+sum(abs(prediccion.lm-parkinson.test$total_UPDRS))/nrow(parkinson.test)
+```
+
+# RBF
+
+## Normalizamos (BIEN) los datos:
+
+```{r}
+parkinson.train.data.scaled = scale(parkinson.train[,c(-1,-2)])
+media  = attr(parkinson.train.data.scaled, "scaled:center")
+escala = attr(parkinson.train.data.scaled, "scaled:scale") 
+parkinson.test.data.scaled = scale(parkinson.test[,c(-1,-2)],media,escala)
+
+parkinson.train.normalized = data.frame(parkinson.train[,c(1,2)], parkinson.train.data.scaled)
+parkinson.test.normalized = data.frame(parkinson.test[,c(1,2)], parkinson.test.data.scaled)
+
+#parkinson.test.normalized[,"motor_UPDRS"]
+
+```
+
+
+## Implementación RBF.
+
+Encontramos una implementación, pero es para redes RBF en 'RSNNS'. No es lo que se pretende. Vamos a implementarlo a mano
+
+```{r}
+gaussiana <- function(x){
+  exp(-0.5*(x^2))
+}
+
+distancia <- function(x,y){
+  sqrt(sum((x-y)**2))
+}
+
+RBF <- function (datos.train, valores.train, dato.pred, alfa){
+  pesos = apply(datos.train, 1, function(x) {gaussiana(distancia(x,dato.pred)*alfa)} )
+
+  suma = sum(pesos*valores.train)
+  suma.pesos = sum(pesos)
+
+  suma/suma.pesos
+}
+
+RBF(as.matrix(parkinson.train.normalized[,c(-1,-2)]),parkinson.train.normalized[,1], parkinson.test.normalized[1,c(-1,-2)],5)
+parkinson.test.normalized[1,]
+
+predict.RBF <- function (datos.train,valores.train,datos.pred,alfa){
+  values <- sapply(1:nrow(datos.pred), function(x) {RBF(datos.train,valores.train,datos.pred[x,],alfa) })
+  return(values)
+}
+```
+
+Y usamos nuestro método:
+
+## Resultados RBF.
+
+```{r eval=FALSE}
+idx.train = sample(nrow(parkinson.test.normalized),size = 250)
+alfa = 5
+parkinson.test.normalized = parkinson.test.normalized[idx.train,]
+start.time <- Sys.time()
+prediccion= predict.RBF(as.matrix(parkinson.train.normalized[,c(-1,-2)]), parkinson.train.normalized[,"motor_UPDRS"],parkinson.test.normalized[,c(-1,-2)],alfa)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
+sum(abs(prediccion-parkinson.test.normalized$motor_UPDRS))/nrow(parkinson.test.normalized)
+```
+
+```
+## Time difference of 1.041112 hours
+## [1] 5.016297
+```
+
+
+```{r eval=FALSE}
+idx.train = sample(nrow(parkinson.test.normalized),size = 250)
+alfa = 5
+parkinson.test.normalized = parkinson.test.normalized[idx.train,]
+start.time <- Sys.time()
+prediccion= predict.RBF(as.matrix(parkinson.train.normalized[,c(-1,-2)]), parkinson.train.normalized[,"total_UPDRS"],parkinson.test.normalized[,c(-1,-2)],alfa)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
+sum(abs(prediccion-parkinson.test.normalized$total_UPDRS))/nrow(parkinson.test.normalized)
+```
+
+```
+## Time difference of 1.017859 hours
+## [1] 6.526908
+```
+
+### Obtención alfa.
+
+Todos los valores
+
+```{r eval=FALSE}
+idx.train = sample(nrow(parkinson.train.normalized),size = 100)
+alfa.train = parkinson.train.normalized[-idx.train,]
+alfa.test = parkinson.train.normalized[idx.train,]
+
+alfa.train[1,c(-1,-2)]
+alfa.test[1,c(-1,-2)]
+
+for(alfa in seq(0.5,10,0.5)){
+  prediccion= predict.RBF(as.matrix(alfa.train[,c(-1,-2)]), alfa.train[,"motor_UPDRS"],alfa.test[,c(-1,-2)],alfa)
+  error = sum(abs(prediccion-alfa.test$motor_UPDRS))/nrow(alfa.test)
+  cat(paste0("\nError: ",error,"\t alfa: ",alfa))
+}
+```
+
+Resultado:
+```
+## 
+## Error: 6.73535219466314   alfa: 0.5
+## Error: 6.3282657862213    alfa: 1
+## Error: 5.89534589080344   alfa: 1.5
+## Error: 5.53315522351281   alfa: 2
+## Error: 5.2797563222449    alfa: 2.5
+## Error: 5.13360885474173   alfa: 3
+## Error: 5.0539335300765    alfa: 3.5
+## Error: 5.01069286675377   alfa: 4
+## Error: 4.98287946504069   alfa: 4.5
+## Error: 4.94499189498975   alfa: 5
+## Error: 4.96369487794373   alfa: 5.5
+## Error: 5.00315444645104   alfa: 6
+## Error: 5.07513950634363   alfa: 6.5
+## Error: 5.14813111401623   alfa: 7
+## Error: 5.20864026260962   alfa: 7.5
+## Error: 5.2622295040826    alfa: 8
+## Error: 5.30679529449295   alfa: 8.5
+## Error: 5.34320525400589   alfa: 9
+## Error: 5.37423229050629   alfa: 9.5
+## Error: 5.400429654384     alfa: 10
+```
+
+
+```{r eval=FALSE}
+idx.train = sample(nrow(parkinson.train.normalized),size = 100)
+alfa.train = parkinson.train.normalized[-idx.train,c("motor_UPDRS","total_UPDRS","Shimmer.APQ5","Shimmer.APQ11","HNR","DFA","PPE")]
+alfa.test = parkinson.train.normalized[idx.train,c("motor_UPDRS","total_UPDRS","Shimmer.APQ5","Shimmer.APQ11","HNR","DFA","PPE")]
+
+alfa.train[1,c(-1,-2)]
+alfa.test[1,c(-1,-2)]
+
+for(alfa in seq(0.5,10,0.5)){
+  prediccion= predict.RBF(as.matrix(alfa.train[,c(-1,-2)]), alfa.train[,"motor_UPDRS"],alfa.test[,c(-1,-2)],alfa)
+  error = sum(abs(prediccion-alfa.test$motor_UPDRS))/nrow(alfa.test)
+  cat(paste0("\nError: ",error,"\t alfa: ",alfa))
+}
+```
+
+```
+## Error: 6.43949447162967   alfa: 0.5
+## Error: 6.13546643555188   alfa: 1
+## Error: 5.85575599885018   alfa: 1.5
+## Error: 5.66872208818559   alfa: 2
+## Error: 5.53959428385389   alfa: 2.5
+## Error: 5.46051764789844   alfa: 3
+## Error: 5.46491435315243   alfa: 3.5
+## Error: 5.49622963322512   alfa: 4
+## Error: 5.52977737217212   alfa: 4.5
+## Error: 5.57220233092421   alfa: 5
+## Error: 5.62090559417566   alfa: 5.5
+## Error: 5.66685728724031   alfa: 6
+## Error: 5.7082091839194    alfa: 6.5
+## Error: 5.74422888234316   alfa: 7
+## Error: 5.77472519169302   alfa: 7.5
+## Error: 5.80317694602853   alfa: 8
+## Error: 5.83557108908132   alfa: 8.5
+## Error: 5.87673352261256   alfa: 9
+## Error: 5.91402258664623   alfa: 9.5
+## Error: 5.9660634033741    alfa: 10
+```
